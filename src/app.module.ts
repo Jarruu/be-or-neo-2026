@@ -16,6 +16,7 @@ import { AssignmentModule } from './modules/assignment/assignment.module';
 import { MasterDataModule } from './modules/master-data/master-data.module';
 import { UserModule } from './modules/user/user.module';
 import { MentorModule } from './modules/mentor/mentor.module';
+import { WhatsAppModule } from './modules/whatsapp/whatsapp.module';
 
 @Module({
   imports: [
@@ -34,6 +35,7 @@ import { MentorModule } from './modules/mentor/mentor.module';
     MasterDataModule,
     UserModule,
     MentorModule,
+    WhatsAppModule,
   ],
   controllers: [AppController],
   providers: [AppService],

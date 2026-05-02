@@ -1,0 +1,40 @@
+name: Deploy to Server
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          port: ${{ secrets.SSH_PORT || 22 }}
+          script: |
+            export PATH=$PATH:/home/${{ secrets.SSH_USER }}/.nvm/versions/node/$(node -v)/bin # Sesuaikan path node/pnpm jika perlu
+            cd ${{ secrets.TARGET_DIR }}
+            git pull origin main
+            
+            # Install dependencies
+            pnpm install
+            
+            # Generate Prisma Client (Karena kamu pakai custom output)
+            npx prisma generate
+            
+            # Build project
+            pnpm run build
+            
+            # Reload PM2
+            pm2 reload ecosystem.config.js --env production
+            
+            echo "Deployment finished successfully!"

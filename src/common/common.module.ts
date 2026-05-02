@@ -1,12 +1,15 @@
 import { Module, Global } from '@nestjs/common';
 import { CacheModule } from '@nestjs/cache-manager';
+import { HttpModule } from '@nestjs/axios';
 import { redisStore } from 'cache-manager-redis-yet';
 import { CloudinaryStorageService } from './services/storage/cloudinary-storage.service';
 import { PrismaService } from './services/prisma.service';
+import { WawayService } from './services/waway.service';
 
 @Global()
 @Module({
   imports: [
+    HttpModule,
     CacheModule.registerAsync({
       isGlobal: true,
       useFactory: async () => ({
@@ -27,12 +30,15 @@ import { PrismaService } from './services/prisma.service';
     },
     CloudinaryStorageService,
     PrismaService,
+    WawayService,
   ],
   exports: [
     'IStorageService',
     CloudinaryStorageService,
     PrismaService,
+    WawayService,
     CacheModule,
+    HttpModule,
   ],
 })
 export class CommonModule {}
