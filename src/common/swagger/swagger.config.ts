@@ -12,8 +12,8 @@ export function setupSwagger(app: INestApplication) {
       ].join(' '),
     )
     .setVersion('1.0.0')
-    // Set the base server to /api. Combined with ignoreGlobalPrefix: true,
-    // this ensures all requests are prefixed with /api correctly without duplication.
+    // Swagger uses /api as the server base, so the generated paths must not
+    // include Nest's global prefix again.
     .addServer('/api', 'Default Server')
     .addBearerAuth(
       {
@@ -49,6 +49,7 @@ export function setupSwagger(app: INestApplication) {
     .build();
 
   const document = SwaggerModule.createDocument(app, config, {
+    ignoreGlobalPrefix: true,
     operationIdFactory: (controllerKey, methodKey) =>
       `${controllerKey.replace(/Controller$/, '')}_${methodKey}`,
   });
@@ -67,5 +68,4 @@ export function setupSwagger(app: INestApplication) {
     },
     customSiteTitle: 'OR Neo Telemetri 2026 API Docs',
   });
-
 }

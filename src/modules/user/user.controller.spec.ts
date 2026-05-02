@@ -10,6 +10,7 @@ describe('UserController', () => {
   const mockUserService = {
     findAll: jest.fn(),
     findOne: jest.fn(),
+    update: jest.fn(),
     remove: jest.fn(),
   };
 
@@ -69,6 +70,21 @@ describe('UserController', () => {
       await controller.remove(userId, adminId);
 
       expect(service.remove).toHaveBeenCalledWith(userId, adminId);
+    });
+  });
+
+  describe('update', () => {
+    it('should call service.update and return its result', async () => {
+      const adminId = 'admin-1';
+      const userId = 'user-1';
+      const dto = { email: 'updated@example.com', fullName: 'Updated User' };
+      const mockUser = { id: userId, ...dto };
+      mockUserService.update.mockResolvedValue(mockUser);
+
+      const result = await controller.update(userId, dto, adminId);
+
+      expect(result).toEqual(mockUser);
+      expect(service.update).toHaveBeenCalledWith(userId, dto, adminId);
     });
   });
 });
