@@ -214,7 +214,7 @@ export type SubmissionVerificationGroupByOutputType = {
   _max: SubmissionVerificationMaxAggregateOutputType | null
 }
 
-export type GetSubmissionVerificationGroupByPayload<T extends SubmissionVerificationGroupByArgs> = Prisma.PrismaPromise<
+type GetSubmissionVerificationGroupByPayload<T extends SubmissionVerificationGroupByArgs> = Prisma.PrismaPromise<
   Array<
     Prisma.PickEnumerable<SubmissionVerificationGroupByOutputType, T['by']> &
       {
@@ -1574,11 +1574,6 @@ export type SubmissionVerificationFindManyArgs<ExtArgs extends runtime.Types.Ext
    * Skip the first `n` SubmissionVerifications.
    */
   skip?: number
-  /**
-   * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
-   * 
-   * Filter by unique combinations of SubmissionVerifications.
-   */
   distinct?: Prisma.SubmissionVerificationScalarFieldEnum | Prisma.SubmissionVerificationScalarFieldEnum[]
 }
 

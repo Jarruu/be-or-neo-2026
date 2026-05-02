@@ -158,7 +158,7 @@ export type SubDivisionGroupByOutputType = {
   _max: SubDivisionMaxAggregateOutputType | null
 }
 
-export type GetSubDivisionGroupByPayload<T extends SubDivisionGroupByArgs> = Prisma.PrismaPromise<
+type GetSubDivisionGroupByPayload<T extends SubDivisionGroupByArgs> = Prisma.PrismaPromise<
   Array<
     Prisma.PickEnumerable<SubDivisionGroupByOutputType, T['by']> &
       {
@@ -1554,11 +1554,6 @@ export type SubDivisionFindManyArgs<ExtArgs extends runtime.Types.Extensions.Int
    * Skip the first `n` SubDivisions.
    */
   skip?: number
-  /**
-   * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
-   * 
-   * Filter by unique combinations of SubDivisions.
-   */
   distinct?: Prisma.SubDivisionScalarFieldEnum | Prisma.SubDivisionScalarFieldEnum[]
 }
 

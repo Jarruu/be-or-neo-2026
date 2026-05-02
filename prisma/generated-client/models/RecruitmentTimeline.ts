@@ -213,7 +213,7 @@ export type RecruitmentTimelineGroupByOutputType = {
   _max: RecruitmentTimelineMaxAggregateOutputType | null
 }
 
-export type GetRecruitmentTimelineGroupByPayload<T extends RecruitmentTimelineGroupByArgs> = Prisma.PrismaPromise<
+type GetRecruitmentTimelineGroupByPayload<T extends RecruitmentTimelineGroupByArgs> = Prisma.PrismaPromise<
   Array<
     Prisma.PickEnumerable<RecruitmentTimelineGroupByOutputType, T['by']> &
       {
@@ -1094,11 +1094,6 @@ export type RecruitmentTimelineFindManyArgs<ExtArgs extends runtime.Types.Extens
    * Skip the first `n` RecruitmentTimelines.
    */
   skip?: number
-  /**
-   * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
-   * 
-   * Filter by unique combinations of RecruitmentTimelines.
-   */
   distinct?: Prisma.RecruitmentTimelineScalarFieldEnum | Prisma.RecruitmentTimelineScalarFieldEnum[]
 }
 

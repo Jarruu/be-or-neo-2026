@@ -158,7 +158,7 @@ export type ProgramStudiGroupByOutputType = {
   _max: ProgramStudiMaxAggregateOutputType | null
 }
 
-export type GetProgramStudiGroupByPayload<T extends ProgramStudiGroupByArgs> = Prisma.PrismaPromise<
+type GetProgramStudiGroupByPayload<T extends ProgramStudiGroupByArgs> = Prisma.PrismaPromise<
   Array<
     Prisma.PickEnumerable<ProgramStudiGroupByOutputType, T['by']> &
       {
@@ -1100,11 +1100,6 @@ export type ProgramStudiFindManyArgs<ExtArgs extends runtime.Types.Extensions.In
    * Skip the first `n` ProgramStudis.
    */
   skip?: number
-  /**
-   * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
-   * 
-   * Filter by unique combinations of ProgramStudis.
-   */
   distinct?: Prisma.ProgramStudiScalarFieldEnum | Prisma.ProgramStudiScalarFieldEnum[]
 }
 

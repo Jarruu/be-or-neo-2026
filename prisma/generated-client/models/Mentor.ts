@@ -172,7 +172,7 @@ export type MentorGroupByOutputType = {
   _max: MentorMaxAggregateOutputType | null
 }
 
-export type GetMentorGroupByPayload<T extends MentorGroupByArgs> = Prisma.PrismaPromise<
+type GetMentorGroupByPayload<T extends MentorGroupByArgs> = Prisma.PrismaPromise<
   Array<
     Prisma.PickEnumerable<MentorGroupByOutputType, T['by']> &
       {
@@ -1154,11 +1154,6 @@ export type MentorFindManyArgs<ExtArgs extends runtime.Types.Extensions.Internal
    * Skip the first `n` Mentors.
    */
   skip?: number
-  /**
-   * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
-   * 
-   * Filter by unique combinations of Mentors.
-   */
   distinct?: Prisma.MentorScalarFieldEnum | Prisma.MentorScalarFieldEnum[]
 }
 

@@ -158,7 +158,7 @@ export type ActivityGroupByOutputType = {
   _max: ActivityMaxAggregateOutputType | null
 }
 
-export type GetActivityGroupByPayload<T extends ActivityGroupByArgs> = Prisma.PrismaPromise<
+type GetActivityGroupByPayload<T extends ActivityGroupByArgs> = Prisma.PrismaPromise<
   Array<
     Prisma.PickEnumerable<ActivityGroupByOutputType, T['by']> &
       {
@@ -1088,11 +1088,6 @@ export type ActivityFindManyArgs<ExtArgs extends runtime.Types.Extensions.Intern
    * Skip the first `n` Activities.
    */
   skip?: number
-  /**
-   * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
-   * 
-   * Filter by unique combinations of Activities.
-   */
   distinct?: Prisma.ActivityScalarFieldEnum | Prisma.ActivityScalarFieldEnum[]
 }
 
