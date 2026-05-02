@@ -1,0 +1,422 @@
+generator client {
+  provider = "prisma-client"
+  output   = "./generated-client"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum UserRole {
+  ADMIN
+  USER
+
+  @@map("user_role")
+}
+
+enum VerificationStatus {
+  PENDING
+  APPROVED
+  REJECTED
+
+  @@map("verification_status")
+}
+
+enum PaymentStatus {
+  PENDING
+  APPROVED
+  REJECTED
+
+  @@map("payment_status")
+}
+
+enum ExamType {
+  MCQ
+  TRUE_FALSE
+  SHORT_TEXT
+
+  @@map("exam_type")
+}
+
+enum AttemptStatus {
+  IN_PROGRESS
+  SUBMITTED
+  TIMEOUT
+
+  @@map("attempt_status")
+}
+
+enum AttendanceStatus {
+  PRESENT
+  ABSENT
+  EXCUSED
+  SICK
+
+  @@map("attendance_status")
+}
+
+enum Fakultas {
+  PERTANIAN
+  KEDOKTERAN
+  MIPA
+  PETERNAKAN
+  TEKNIK
+  TEKNOLOGI_PERTANIAN
+  FARMASI
+  TEKNOLOGI_INFORMASI
+  KEPERAWATAN
+  KESEHATAN_MASYARAKAT
+  KEDOKTERAN_GIGI
+  HUKUM
+  EKONOMI_DAN_BISNIS
+  ILMU_BUDAYA
+  ILMU_SOSIAL_DAN_POLITIK
+
+  @@map("fakultas")
+}
+
+model User {
+  id           String   @id @default(uuid())
+  email        String   @unique @db.VarChar(255)
+  passwordHash String   @map("password_hash") @db.Text
+  role         UserRole @default(USER)
+  isActive     Boolean  @default(true) @map("is_active")
+  deactivatedAt DateTime? @map("deactivated_at")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @default(now()) @updatedAt @map("updated_at")
+
+  profile                 Profile?
+  submissionVerifications SubmissionVerification[]
+  payments                Payment[]
+  examAttempts            ExamAttempt[]
+  assignmentSubmissions   AssignmentSubmission[]
+  attendances             Attendance[]
+  reviewedVerifications   SubmissionVerification[] @relation("ReviewedByAdmin")
+  reviewedPayments        Payment[]                @relation("PaymentReviewedByAdmin")
+  createdModules          LearningModule[]         @relation("CreatedByAdmin")
+  createdAssignments      Assignment[]             @relation("CreatedByAdmin")
+
+  @@map("users")
+}
+
+model Department {
+  id        String   @id @default(uuid())
+  name      String   @unique @db.VarChar(255)
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @default(now()) @updatedAt @map("updated_at")
+
+  divisions Division[]
+  profiles  Profile[]
+
+  @@map("departments")
+}
+
+model RecruitmentTimeline {
+  id          String   @id @default(uuid())
+  title       String   @db.VarChar(255)
+  description String?  @db.Text
+  startAt     DateTime @map("start_at")
+  endAt       DateTime @map("end_at")
+  orderIndex  Int      @map("order_index")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @default(now()) @updatedAt @map("updated_at")
+
+  @@unique([orderIndex])
+  @@map("recruitment_timelines")
+}
+
+model Activity {
+  id        String   @id @default(uuid())
+  name      String   @db.VarChar(255)
+  deadline  DateTime
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @default(now()) @updatedAt @map("updated_at")
+
+  attendances Attendance[]
+
+  @@map("activities")
+}
+
+model Attendance {
+  id          String           @id @default(uuid())
+  userId      String           @map("user_id")
+  activityId  String           @map("activity_id")
+  checkInTime DateTime?        @map("check_in_time")
+  status      AttendanceStatus @default(ABSENT)
+  notes       String?          @db.Text
+  createdAt   DateTime         @default(now()) @map("created_at")
+  updatedAt   DateTime         @default(now()) @updatedAt @map("updated_at")
+
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  activity Activity @relation(fields: [activityId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, activityId])
+  @@map("attendances")
+}
+
+model Division {
+  id           String   @id @default(uuid())
+  departmentId String   @map("department_id")
+  name         String   @db.VarChar(255)
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @default(now()) @updatedAt @map("updated_at")
+
+  department   Department    @relation(fields: [departmentId], references: [id], onDelete: Cascade)
+  subDivisions SubDivision[]
+  profiles     Profile[]
+
+  @@unique([departmentId, name])
+  @@map("divisions")
+}
+
+model SubDivision {
+  id         String   @id @default(uuid())
+  divisionId String   @map("division_id")
+  name       String   @db.VarChar(255)
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @default(now()) @updatedAt @map("updated_at")
+
+  division        Division         @relation(fields: [divisionId], references: [id], onDelete: Cascade)
+  profiles        Profile[]
+  exams           Exam[]
+  learningModules LearningModule[]
+  assignments     Assignment[]
+
+  @@unique([divisionId, name])
+  @@map("sub_divisions")
+}
+
+model Profile {
+  id              String    @id @default(uuid())
+  userId          String    @unique @map("user_id")
+  fullName        String    @map("full_name") @db.VarChar(255)
+  nickName        String?   @map("nick_name") @db.VarChar(255)
+  nim             String    @unique @db.VarChar(50)
+  whatsappNumber  String?   @map("whatsapp_number") @db.VarChar(20)
+  mentorId        String?   @map("mentor_id")
+  fakultas        Fakultas? @map("fakultas")
+  studyProgramId  String?   @map("study_program_id")
+  departmentId    String?   @map("department_id")
+  divisionId      String?   @map("division_id")
+  subDivisionId   String?   @map("sub_division_id")
+  avatarUrl       String?   @map("avatar_url") @db.Text
+  rejectionReason String?   @map("rejection_reason") @db.Text
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime  @default(now()) @updatedAt @map("updated_at")
+
+  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  programStudi ProgramStudi? @relation(fields: [studyProgramId], references: [id], onDelete: SetNull)
+  department   Department?   @relation(fields: [departmentId], references: [id], onDelete: Cascade)
+  division     Division?     @relation(fields: [divisionId], references: [id], onDelete: Cascade)
+  subDivision  SubDivision?  @relation(fields: [subDivisionId], references: [id], onDelete: Cascade)
+  mentor       Mentor?       @relation(fields: [mentorId], references: [id], onDelete: SetNull)
+
+  @@map("profiles")
+}
+
+model Mentor {
+  id                String   @id @default(uuid())
+  name              String   @db.VarChar(255)
+  photoUrl          String?  @map("photo_url") @db.Text
+  whatsappNumber    String?  @map("whatsapp_number") @db.VarChar(20)
+  instagramUsername String?  @map("instagram_username") @db.VarChar(255)
+  createdAt         DateTime @default(now()) @map("created_at")
+  updatedAt         DateTime @default(now()) @updatedAt @map("updated_at")
+
+  profiles Profile[]
+
+  @@map("mentors")
+}
+
+model ProgramStudi {
+  id        String   @id @default(uuid())
+  fakultas  Fakultas
+  name      String   @db.VarChar(255)
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @default(now()) @updatedAt @map("updated_at")
+
+  profiles Profile[]
+
+  @@unique([fakultas, name])
+  @@map("program_studi")
+}
+
+model SubmissionVerification {
+  id                         String             @id @default(uuid())
+  userId                     String             @map("user_id")
+  krsScanUrl                 String?            @map("krs_scan_url") @db.Text
+  formalPhotoUrl             String?            @map("formal_photo_url") @db.Text
+  instagramProofUrl          String?            @map("instagram_proof_url") @db.Text
+  instagramMarketingProofUrl String?            @map("instagram_marketing_proof_url") @db.Text
+  twibbonLink                String?            @map("twibbon_link") @db.Text
+  status                     VerificationStatus @default(PENDING)
+  rejectionReason            String?            @map("rejection_reason") @db.Text
+  reviewedByAdminId          String?            @map("reviewed_by_admin_id")
+  reviewedAt                 DateTime?          @map("reviewed_at")
+  createdAt                  DateTime           @default(now()) @map("created_at")
+  updatedAt                  DateTime           @default(now()) @updatedAt @map("updated_at")
+
+  user            User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  reviewedByAdmin User? @relation("ReviewedByAdmin", fields: [reviewedByAdminId], references: [id], onDelete: SetNull)
+
+  @@map("submission_verifications")
+}
+
+model Payment {
+  id                String        @id @default(uuid())
+  userId            String        @map("user_id")
+  amount            Decimal       @db.Decimal(12, 2)
+  proofUrl          String        @map("proof_url") @db.Text
+  status            PaymentStatus @default(PENDING)
+  rejectionReason   String?       @map("rejection_reason") @db.Text
+  reviewedByAdminId String?       @map("reviewed_by_admin_id")
+  reviewedAt        DateTime?     @map("reviewed_at")
+  createdAt         DateTime      @default(now()) @map("created_at")
+  updatedAt         DateTime      @default(now()) @updatedAt @map("updated_at")
+
+  user            User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  reviewedByAdmin User? @relation("PaymentReviewedByAdmin", fields: [reviewedByAdminId], references: [id], onDelete: SetNull)
+
+  @@map("payments")
+}
+
+model Exam {
+  id              String    @id @default(uuid())
+  subDivisionId   String    @map("sub_division_id")
+  title           String    @db.VarChar(255)
+  description     String?   @db.Text
+  durationMinutes Int       @map("duration_minutes")
+  maxAttempts     Int?      @default(1) @map("max_attempts")
+  startAt         DateTime? @map("start_at")
+  endAt           DateTime? @map("end_at")
+  isActive        Boolean?  @default(true) @map("is_active")
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime  @default(now()) @updatedAt @map("updated_at")
+
+  subDivision SubDivision   @relation(fields: [subDivisionId], references: [id], onDelete: Cascade)
+  questions   Question[]
+  attempts    ExamAttempt[]
+
+  @@map("exams")
+}
+
+model Question {
+  id                String   @id @default(uuid())
+  examId            String   @map("exam_id")
+  type              ExamType
+  prompt            String   @db.Text
+  correctTextAnswer String?  @map("correct_text_answer") @db.Text
+  points            Int?     @default(0)
+  orderIndex        Int      @map("order_index")
+  createdAt         DateTime @default(now()) @map("created_at")
+  updatedAt         DateTime @default(now()) @updatedAt @map("updated_at")
+
+  exam    Exam         @relation(fields: [examId], references: [id], onDelete: Cascade)
+  choices Choice[]
+  answers ExamAnswer[]
+
+  @@map("questions")
+}
+
+model Choice {
+  id         String  @id @default(uuid())
+  questionId String  @map("question_id")
+  label      String  @db.Text
+  isCorrect  Boolean @default(false) @map("is_correct")
+  orderIndex Int     @map("order_index")
+
+  question    Question     @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  examAnswers ExamAnswer[]
+
+  @@map("choices")
+}
+
+model ExamAttempt {
+  id             String        @id @default(uuid())
+  userId         String        @map("user_id")
+  examId         String        @map("exam_id")
+  startedAt      DateTime?     @default(now()) @map("started_at")
+  finishedAt     DateTime?     @map("finished_at")
+  totalQuestions Int?          @default(0) @map("total_questions")
+  score          Decimal?      @default(0) @db.Decimal(5, 2)
+  correctCount   Int?          @default(0) @map("correct_count")
+  wrongCount     Int?          @default(0) @map("wrong_count")
+  status         AttemptStatus @default(IN_PROGRESS)
+  createdAt      DateTime      @default(now()) @map("created_at")
+  updatedAt      DateTime      @default(now()) @updatedAt @map("updated_at")
+
+  user    User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  exam    Exam         @relation(fields: [examId], references: [id], onDelete: Cascade)
+  answers ExamAnswer[]
+
+  @@map("exam_attempts")
+}
+
+model ExamAnswer {
+  id             String   @id @default(uuid())
+  attemptId      String   @map("attempt_id")
+  questionId     String   @map("question_id")
+  chosenChoiceId String?  @map("chosen_choice_id")
+  textAnswer     String?  @map("text_answer") @db.Text
+  isCorrect      Boolean? @default(false) @map("is_correct")
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @default(now()) @updatedAt @map("updated_at")
+
+  attempt      ExamAttempt @relation(fields: [attemptId], references: [id], onDelete: Cascade)
+  question     Question    @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  chosenChoice Choice?     @relation(fields: [chosenChoiceId], references: [id], onDelete: Cascade)
+
+  @@map("exam_answers")
+}
+
+model LearningModule {
+  id               String   @id @default(uuid())
+  subDivisionId    String   @map("sub_division_id")
+  title            String   @db.VarChar(255)
+  description      String?  @db.Text
+  fileUrl          String   @map("file_url") @db.Text
+  createdByAdminId String   @map("created_by_admin_id")
+  createdAt        DateTime @default(now()) @map("created_at")
+  updatedAt        DateTime @default(now()) @updatedAt @map("updated_at")
+
+  subDivision    SubDivision @relation(fields: [subDivisionId], references: [id], onDelete: Cascade)
+  createdByAdmin User        @relation("CreatedByAdmin", fields: [createdByAdminId], references: [id], onDelete: Cascade)
+
+  @@map("learning_modules")
+}
+
+model Assignment {
+  id               String   @id @default(uuid())
+  subDivisionId    String   @map("sub_division_id")
+  title            String   @db.VarChar(255)
+  description      String?  @db.Text
+  fileUrl          String?  @map("file_url") @db.Text
+  dueAt            DateTime @map("due_at")
+  createdByAdminId String   @map("created_by_admin_id")
+  createdAt        DateTime @default(now()) @map("created_at")
+  updatedAt        DateTime @default(now()) @updatedAt @map("updated_at")
+
+  subDivision    SubDivision            @relation(fields: [subDivisionId], references: [id], onDelete: Cascade)
+  createdByAdmin User                   @relation("CreatedByAdmin", fields: [createdByAdminId], references: [id], onDelete: Cascade)
+  submissions    AssignmentSubmission[]
+
+  @@map("assignments")
+}
+
+model AssignmentSubmission {
+  id           String    @id @default(uuid())
+  assignmentId String    @map("assignment_id")
+  userId       String    @map("user_id")
+  fileUrl      String?   @map("file_url") @db.Text
+  textContent  String?   @map("text_content") @db.Text
+  submittedAt  DateTime? @default(now()) @map("submitted_at")
+  score        Decimal?  @db.Decimal(5, 2)
+  feedback     String?   @db.Text
+  createdAt    DateTime  @default(now()) @map("created_at")
+  updatedAt    DateTime  @default(now()) @updatedAt @map("updated_at")
+
+  assignment Assignment @relation(fields: [assignmentId], references: [id], onDelete: Cascade)
+  user       User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("assignment_submissions")
+}
