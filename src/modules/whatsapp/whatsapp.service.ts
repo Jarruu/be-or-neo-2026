@@ -17,6 +17,7 @@ export class WhatsAppService {
         AND: [
           { whatsappNumber: { not: null } },
           { whatsappNumber: { not: '' } },
+          { user: { isActive: true } },
         ],
       },
       select: {
