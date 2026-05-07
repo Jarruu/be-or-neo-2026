@@ -11,6 +11,8 @@ import {
   UploadedFile,
   Res,
   StreamableFile,
+  ParseFilePipe,
+  MaxFileSizeValidator,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import {
@@ -355,7 +357,15 @@ export class AssignmentController {
     @Param('id') id: string,
     @GetUser('id') userId: string,
     @Body() dto: SubmitAssignmentDto,
-    @UploadedFile() file?: Express.Multer.File,
+    @UploadedFile(
+      new ParseFilePipe({
+        validators: [
+          new MaxFileSizeValidator({ maxSize: 10 * 1024 * 1024 }), // 10MB
+        ],
+        fileIsRequired: false,
+      }),
+    )
+    file?: Express.Multer.File,
   ) {
     return this.assignmentService.submit(id, userId, file, dto.textContent);
   }

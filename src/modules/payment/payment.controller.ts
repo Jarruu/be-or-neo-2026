@@ -8,6 +8,9 @@ import {
   UploadedFile,
   Param,
   Patch,
+  ParseFilePipe,
+  MaxFileSizeValidator,
+  FileTypeValidator,
 } from '@nestjs/common';
 import {
   ApiOperation,
@@ -43,7 +46,15 @@ export class PaymentController {
   uploadProof(
     @GetUser('id') userId: string,
     @Body() dto: UploadProofDto,
-    @UploadedFile() file: Express.Multer.File,
+    @UploadedFile(
+      new ParseFilePipe({
+        validators: [
+          new MaxFileSizeValidator({ maxSize: 5 * 1024 * 1024 }), // 5MB
+          new FileTypeValidator({ fileType: '.(png|jpeg|jpg)' }),
+        ],
+      }),
+    )
+    file: Express.Multer.File,
   ) {
     return this.paymentService.uploadProof(userId, dto.amount, file);
   }
