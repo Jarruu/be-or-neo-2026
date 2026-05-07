@@ -403,7 +403,8 @@ export const ModelName = {
   ExamAnswer: 'ExamAnswer',
   LearningModule: 'LearningModule',
   Assignment: 'Assignment',
-  AssignmentSubmission: 'AssignmentSubmission'
+  AssignmentSubmission: 'AssignmentSubmission',
+  ScheduledWhatsApp: 'ScheduledWhatsApp'
 } as const
 
 export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -419,7 +420,7 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "user" | "department" | "recruitmentTimeline" | "activity" | "attendance" | "division" | "subDivision" | "profile" | "mentor" | "programStudi" | "submissionVerification" | "payment" | "exam" | "question" | "choice" | "examAttempt" | "examAnswer" | "learningModule" | "assignment" | "assignmentSubmission"
+    modelProps: "user" | "department" | "recruitmentTimeline" | "activity" | "attendance" | "division" | "subDivision" | "profile" | "mentor" | "programStudi" | "submissionVerification" | "payment" | "exam" | "question" | "choice" | "examAttempt" | "examAnswer" | "learningModule" | "assignment" | "assignmentSubmission" | "scheduledWhatsApp"
     txIsolationLevel: TransactionIsolationLevel
   }
   model: {
@@ -1903,6 +1904,80 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         }
       }
     }
+    ScheduledWhatsApp: {
+      payload: Prisma.$ScheduledWhatsAppPayload<ExtArgs>
+      fields: Prisma.ScheduledWhatsAppFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.ScheduledWhatsAppFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ScheduledWhatsAppPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.ScheduledWhatsAppFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ScheduledWhatsAppPayload>
+        }
+        findFirst: {
+          args: Prisma.ScheduledWhatsAppFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ScheduledWhatsAppPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.ScheduledWhatsAppFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ScheduledWhatsAppPayload>
+        }
+        findMany: {
+          args: Prisma.ScheduledWhatsAppFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ScheduledWhatsAppPayload>[]
+        }
+        create: {
+          args: Prisma.ScheduledWhatsAppCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ScheduledWhatsAppPayload>
+        }
+        createMany: {
+          args: Prisma.ScheduledWhatsAppCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.ScheduledWhatsAppCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ScheduledWhatsAppPayload>[]
+        }
+        delete: {
+          args: Prisma.ScheduledWhatsAppDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ScheduledWhatsAppPayload>
+        }
+        update: {
+          args: Prisma.ScheduledWhatsAppUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ScheduledWhatsAppPayload>
+        }
+        deleteMany: {
+          args: Prisma.ScheduledWhatsAppDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.ScheduledWhatsAppUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.ScheduledWhatsAppUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ScheduledWhatsAppPayload>[]
+        }
+        upsert: {
+          args: Prisma.ScheduledWhatsAppUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ScheduledWhatsAppPayload>
+        }
+        aggregate: {
+          args: Prisma.ScheduledWhatsAppAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateScheduledWhatsApp>
+        }
+        groupBy: {
+          args: Prisma.ScheduledWhatsAppGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.ScheduledWhatsAppGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.ScheduledWhatsAppCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.ScheduledWhatsAppCountAggregateOutputType> | number
+        }
+      }
+    }
   }
 } & {
   other: {
@@ -2228,6 +2303,19 @@ export const AssignmentSubmissionScalarFieldEnum = {
 export type AssignmentSubmissionScalarFieldEnum = (typeof AssignmentSubmissionScalarFieldEnum)[keyof typeof AssignmentSubmissionScalarFieldEnum]
 
 
+export const ScheduledWhatsAppScalarFieldEnum = {
+  id: 'id',
+  message: 'message',
+  scheduledAt: 'scheduledAt',
+  isSent: 'isSent',
+  sentAt: 'sentAt',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type ScheduledWhatsAppScalarFieldEnum = (typeof ScheduledWhatsAppScalarFieldEnum)[keyof typeof ScheduledWhatsAppScalarFieldEnum]
+
+
 export const SortOrder = {
   asc: 'asc',
   desc: 'desc'
@@ -2547,6 +2635,7 @@ export type GlobalOmitConfig = {
   learningModule?: Prisma.LearningModuleOmit
   assignment?: Prisma.AssignmentOmit
   assignmentSubmission?: Prisma.AssignmentSubmissionOmit
+  scheduledWhatsApp?: Prisma.ScheduledWhatsAppOmit
 }
 
 /* Types for Logging */

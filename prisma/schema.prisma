@@ -420,3 +420,15 @@ model AssignmentSubmission {
 
   @@map("assignment_submissions")
 }
+
+model ScheduledWhatsApp {
+  id          String   @id @default(uuid())
+  message     String   @db.Text
+  scheduledAt DateTime @map("scheduled_at")
+  isSent      Boolean  @default(false) @map("is_sent")
+  sentAt      DateTime? @map("sent_at")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @default(now()) @updatedAt @map("updated_at")
+
+  @@map("scheduled_whatsapp")
+}

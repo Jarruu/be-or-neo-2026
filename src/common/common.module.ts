@@ -5,6 +5,7 @@ import { redisStore } from 'cache-manager-redis-yet';
 import { CloudinaryStorageService } from './services/storage/cloudinary-storage.service';
 import { PrismaService } from './services/prisma.service';
 import { WawayService } from './services/waway.service';
+import { GoogleSheetsService } from './services/google-sheets.service';
 
 @Global()
 @Module({
@@ -31,12 +32,14 @@ import { WawayService } from './services/waway.service';
     CloudinaryStorageService,
     PrismaService,
     WawayService,
+    GoogleSheetsService,
   ],
   exports: [
     'IStorageService',
     CloudinaryStorageService,
     PrismaService,
     WawayService,
+    GoogleSheetsService,
     CacheModule,
     HttpModule,
   ],

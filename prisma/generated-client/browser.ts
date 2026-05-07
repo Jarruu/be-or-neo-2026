@@ -117,3 +117,8 @@ export type Assignment = Prisma.AssignmentModel
  * 
  */
 export type AssignmentSubmission = Prisma.AssignmentSubmissionModel
+/**
+ * Model ScheduledWhatsApp
+ * 
+ */
+export type ScheduledWhatsApp = Prisma.ScheduledWhatsAppModel

@@ -12,6 +12,7 @@ import { Roles } from '../../common/decorators/roles.decorator';
 import { UserRole } from '../../../prisma/generated-client/client';
 import { WhatsAppService } from './whatsapp.service';
 import { SendBulkWhatsAppDto } from './dto/send-bulk-whatsapp.dto';
+import { ScheduleWhatsAppDto } from './dto/schedule-whatsapp.dto';
 import { WhatsAppBulkSendResponseDto } from './dto/whatsapp-response.dto';
 import { ApiJwtAuth } from '../../common/swagger/decorators/api-jwt-auth.decorator';
 
@@ -50,5 +51,32 @@ export class WhatsAppController {
   })
   async sendBulk(@Body() dto: SendBulkWhatsAppDto) {
     return this.whatsappService.sendBulkToAllUsers(dto.message);
+  }
+
+  @Post('admin/schedule')
+  @Roles(UserRole.ADMIN)
+  @ApiOperation({
+    summary: 'Schedule a WhatsApp message',
+    description:
+      'Schedules a WhatsApp message to be sent to all active users at a specific date and time.',
+  })
+  @ApiBody({ type: ScheduleWhatsAppDto })
+  @ApiResponse({
+    status: 201,
+    description: 'The message has been successfully scheduled.',
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized.',
+  })
+  @ApiResponse({
+    status: 403,
+    description: 'Forbidden.',
+  })
+  async schedule(@Body() dto: ScheduleWhatsAppDto) {
+    return this.whatsappService.scheduleMessage(
+      dto.message,
+      new Date(dto.scheduledAt),
+    );
   }
 }

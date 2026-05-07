@@ -70,7 +70,8 @@ export const ModelName = {
   ExamAnswer: 'ExamAnswer',
   LearningModule: 'LearningModule',
   Assignment: 'Assignment',
-  AssignmentSubmission: 'AssignmentSubmission'
+  AssignmentSubmission: 'AssignmentSubmission',
+  ScheduledWhatsApp: 'ScheduledWhatsApp'
 } as const
 
 export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -373,6 +374,19 @@ export const AssignmentSubmissionScalarFieldEnum = {
 } as const
 
 export type AssignmentSubmissionScalarFieldEnum = (typeof AssignmentSubmissionScalarFieldEnum)[keyof typeof AssignmentSubmissionScalarFieldEnum]
+
+
+export const ScheduledWhatsAppScalarFieldEnum = {
+  id: 'id',
+  message: 'message',
+  scheduledAt: 'scheduledAt',
+  isSent: 'isSent',
+  sentAt: 'sentAt',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type ScheduledWhatsAppScalarFieldEnum = (typeof ScheduledWhatsAppScalarFieldEnum)[keyof typeof ScheduledWhatsAppScalarFieldEnum]
 
 
 export const SortOrder = {

@@ -6,7 +6,7 @@ import { JWT } from 'google-auth-library';
 export class GoogleSheetsService {
   private readonly logger = new Logger(GoogleSheetsService.name);
   private client: JWT;
-  private readonly SHEET_NAME = 'Rekap Absensi';
+  private readonly ATTENDANCE_SHEET_NAME = 'Rekap Absensi';
   private readonly BASE_HEADERS = [
     'No.',
     'Nama Lengkap',
@@ -27,22 +27,70 @@ export class GoogleSheetsService {
   }
 
   /**
+   * Mendapatkan nama sheet berdasarkan divisi (khusus tugas).
+   */
+  private getAssignmentSheetName(divisionName: string): string {
+    if (divisionName === 'Multimedia dan Desain') return 'Penilaian MMD';
+    if (divisionName === 'Sistem Komputer Jaringan') return 'Penilaian SKJ';
+    if (divisionName === 'Programming') return 'Penilaian Programming';
+    return `Penilaian ${divisionName}`;
+  }
+
+  /**
+   * Pastikan sheet (tab) dengan nama tertentu ada.
+   */
+  async ensureSheet(spreadsheetId: string, sheetName: string) {
+    const sheets = google.sheets({ version: 'v4', auth: this.client });
+    const spreadsheet = await sheets.spreadsheets.get({ spreadsheetId });
+    const sheet = spreadsheet.data.sheets?.find(
+      (s) => s.properties?.title === sheetName,
+    );
+
+    if (!sheet) {
+      await sheets.spreadsheets.batchUpdate({
+        spreadsheetId,
+        requestBody: {
+          requests: [
+            {
+              addSheet: {
+                properties: {
+                  title: sheetName,
+                  gridProperties: {
+                    frozenRowCount: 1,
+                    frozenColumnCount: 5,
+                  },
+                },
+              },
+            },
+          ],
+        },
+      });
+      return true;
+    }
+    return false;
+  }
+
+  /**
    * Menambahkan header kegiatan baru di kolom paling kanan jika belum ada.
    */
-  async ensureActivityColumn(spreadsheetId: string, activityName: string) {
+  async ensureActivityColumn(
+    spreadsheetId: string,
+    activityName: string,
+    sheetName: string = this.ATTENDANCE_SHEET_NAME,
+  ) {
     const sheets = google.sheets({ version: 'v4', auth: this.client });
 
     // 1. Dapatkan sheetId untuk formatting
     const spreadsheet = await sheets.spreadsheets.get({ spreadsheetId });
     const sheet = spreadsheet.data.sheets?.find(
-      (s) => s.properties?.title === this.SHEET_NAME,
+      (s) => s.properties?.title === sheetName,
     );
     const sheetId = sheet?.properties?.sheetId || 0;
 
     // 2. Ambil header saat ini
     const response = await sheets.spreadsheets.values.get({
       spreadsheetId,
-      range: `${this.SHEET_NAME}!1:1`,
+      range: `${sheetName}!1:1`,
     });
 
     let headers = response.data.values?.[0] || [];
@@ -51,7 +99,7 @@ export class GoogleSheetsService {
     if (headers.length === 0) {
       await sheets.spreadsheets.values.update({
         spreadsheetId,
-        range: `${this.SHEET_NAME}!A1:E1`,
+        range: `${sheetName}!A1:E1`,
         valueInputOption: 'USER_ENTERED',
         requestBody: { values: [this.BASE_HEADERS] },
       });
@@ -84,7 +132,7 @@ export class GoogleSheetsService {
               },
             },
             // Tambahkan Conditional Formatting untuk seluruh kolom absensi (F ke kanan)
-            ...this.getConditionalFormattingRequests(sheetId),
+            ...this.getConditionalFormattingRequests(sheetId, sheetName),
           ],
         },
       });
@@ -124,7 +172,7 @@ export class GoogleSheetsService {
       const targetLetter = this.columnToLetter(insertIndex + 1);
       await sheets.spreadsheets.values.update({
         spreadsheetId,
-        range: `${this.SHEET_NAME}!${targetLetter}1`,
+        range: `${sheetName}!${targetLetter}1`,
         valueInputOption: 'USER_ENTERED',
         requestBody: { values: [[activityName]] },
       });
@@ -162,18 +210,21 @@ export class GoogleSheetsService {
       });
 
       // Ensure Total column exists and is rightmost
-      await this.ensureTotalColumn(spreadsheetId);
+      await this.ensureTotalColumn(spreadsheetId, sheetName);
     }
   }
 
   /**
    * Ensure there's a Total column at the far right.
    */
-  async ensureTotalColumn(spreadsheetId: string) {
+  async ensureTotalColumn(
+    spreadsheetId: string,
+    sheetName: string = this.ATTENDANCE_SHEET_NAME,
+  ) {
     const sheets = google.sheets({ version: 'v4', auth: this.client });
     const headerResponse = await sheets.spreadsheets.values.get({
       spreadsheetId,
-      range: `${this.SHEET_NAME}!1:1`,
+      range: `${sheetName}!1:1`,
     });
     const headers = headerResponse.data.values?.[0] || [];
     const totalIndex = headers.indexOf(this.TOTAL_HEADER);
@@ -183,7 +234,7 @@ export class GoogleSheetsService {
       const nextColumnLetter = this.columnToLetter(headers.length + 1);
       await sheets.spreadsheets.values.update({
         spreadsheetId,
-        range: `${this.SHEET_NAME}!${nextColumnLetter}1`,
+        range: `${sheetName}!${nextColumnLetter}1`,
         valueInputOption: 'USER_ENTERED',
         requestBody: { values: [[this.TOTAL_HEADER]] },
       });
@@ -191,7 +242,7 @@ export class GoogleSheetsService {
       // Style Total header similarly
       const spreadsheet = await sheets.spreadsheets.get({ spreadsheetId });
       const sheet = spreadsheet.data.sheets?.find(
-        (s) => s.properties?.title === this.SHEET_NAME,
+        (s) => s.properties?.title === sheetName,
       );
       const sheetId = sheet?.properties?.sheetId || 0;
 
@@ -210,12 +261,16 @@ export class GoogleSheetsService {
                 },
                 cell: {
                   userEnteredFormat: {
-                    textFormat: { bold: true, foregroundColor: { red: 1, green: 1, blue: 1 } },
+                    textFormat: {
+                      bold: true,
+                      foregroundColor: { red: 1, green: 1, blue: 1 },
+                    },
                     horizontalAlignment: 'CENTER',
                     backgroundColor: { red: 0.2, green: 0.3, blue: 0.6 },
                   },
                 },
-                fields: 'userEnteredFormat(textFormat,horizontalAlignment,backgroundColor)',
+                fields:
+                  'userEnteredFormat(textFormat,horizontalAlignment,backgroundColor)',
               },
             },
           ],
@@ -224,18 +279,22 @@ export class GoogleSheetsService {
     }
 
     // After ensuring, recalculate totals
-    await this.updateTotals(spreadsheetId);
+    await this.updateTotals(spreadsheetId, sheetName);
   }
 
   /**
    * Deletes an activity column by header name.
    */
-  async deleteActivityColumn(spreadsheetId: string, activityName: string) {
+  async deleteActivityColumn(
+    spreadsheetId: string,
+    activityName: string,
+    sheetName: string = this.ATTENDANCE_SHEET_NAME,
+  ) {
     try {
       const sheets = google.sheets({ version: 'v4', auth: this.client });
       const headerResponse = await sheets.spreadsheets.values.get({
         spreadsheetId,
-        range: `${this.SHEET_NAME}!1:1`,
+        range: `${sheetName}!1:1`,
       });
       const headers = headerResponse.data.values?.[0] || [];
       const colIndex = headers.indexOf(activityName);
@@ -243,7 +302,7 @@ export class GoogleSheetsService {
 
       const spreadsheet = await sheets.spreadsheets.get({ spreadsheetId });
       const sheet = spreadsheet.data.sheets?.find(
-        (s) => s.properties?.title === this.SHEET_NAME,
+        (s) => s.properties?.title === sheetName,
       );
       const sheetId = sheet?.properties?.sheetId || 0;
 
@@ -267,7 +326,7 @@ export class GoogleSheetsService {
       });
 
       // Recalculate totals after deletion
-      await this.ensureTotalColumn(spreadsheetId);
+      await this.ensureTotalColumn(spreadsheetId, sheetName);
     } catch (error) {
       this.logger.error('Gagal menghapus kolom kegiatan', error);
     }
@@ -276,12 +335,17 @@ export class GoogleSheetsService {
   /**
    * Clear a single attendance cell (user + activity) — set to empty value.
    */
-  async clearAttendanceCell(spreadsheetId: string, activityName: string, nim: string) {
+  async clearAttendanceCell(
+    spreadsheetId: string,
+    activityName: string,
+    nim: string,
+    sheetName: string = this.ATTENDANCE_SHEET_NAME,
+  ) {
     try {
       const sheets = google.sheets({ version: 'v4', auth: this.client });
       const headerResponse = await sheets.spreadsheets.values.get({
         spreadsheetId,
-        range: `${this.SHEET_NAME}!1:1`,
+        range: `${sheetName}!1:1`,
       });
       const headers = headerResponse.data.values?.[0] || [];
       const colIndex = headers.indexOf(activityName);
@@ -290,7 +354,7 @@ export class GoogleSheetsService {
       // Find row by NIM
       const nimResponse = await sheets.spreadsheets.values.get({
         spreadsheetId,
-        range: `${this.SHEET_NAME}!C:C`,
+        range: `${sheetName}!C:C`,
       });
       const nims = nimResponse.data.values?.map((r) => r[0]) || [];
       const rowIndex = nims.indexOf(nim);
@@ -302,7 +366,7 @@ export class GoogleSheetsService {
       // Set the cell to 'ALFA' (mark as absent) instead of empty
       await sheets.spreadsheets.values.update({
         spreadsheetId,
-        range: `${this.SHEET_NAME}!${colLetter}${rowNumber}`,
+        range: `${sheetName}!${colLetter}${rowNumber}`,
         valueInputOption: 'USER_ENTERED',
         requestBody: { values: [['ALFA']] },
       });
@@ -310,7 +374,7 @@ export class GoogleSheetsService {
       // Apply same formatting as regular updates (center alignment)
       const spreadsheet = await sheets.spreadsheets.get({ spreadsheetId });
       const sheet = spreadsheet.data.sheets?.find(
-        (s) => s.properties?.title === this.SHEET_NAME,
+        (s) => s.properties?.title === sheetName,
       );
       const sheetId = sheet?.properties?.sheetId || 0;
 
@@ -340,7 +404,7 @@ export class GoogleSheetsService {
       });
 
       // Recalculate totals after clearing
-      await this.updateTotals(spreadsheetId);
+      await this.updateTotals(spreadsheetId, sheetName);
     } catch (error) {
       this.logger.error('Gagal membersihkan sel absensi', error);
     }
@@ -355,11 +419,12 @@ export class GoogleSheetsService {
     fullName: string,
     divisionName: string,
     subDivisionName: string,
+    sheetName: string = this.ATTENDANCE_SHEET_NAME,
   ) {
     const sheets = google.sheets({ version: 'v4', auth: this.client });
     const response = await sheets.spreadsheets.values.get({
       spreadsheetId,
-      range: `${this.SHEET_NAME}!C:C`, // NIM sekarang di kolom C
+      range: `${sheetName}!C:C`, // NIM sekarang di kolom C
     });
 
     const nims = response.data.values?.map((row) => row[0]) || [];
@@ -371,7 +436,7 @@ export class GoogleSheetsService {
 
       await sheets.spreadsheets.values.update({
         spreadsheetId,
-        range: `${this.SHEET_NAME}!A${nextRow}:E${nextRow}`,
+        range: `${sheetName}!A${nextRow}:E${nextRow}`,
         valueInputOption: 'USER_ENTERED',
         requestBody: {
           values: [[no, fullName, nim, divisionName, subDivisionName]],
@@ -396,15 +461,16 @@ export class GoogleSheetsService {
       activityName: string;
       status: string;
     },
+    sheetName: string = this.ATTENDANCE_SHEET_NAME,
   ) {
     try {
       const sheets = google.sheets({ version: 'v4', auth: this.client });
 
       // 1. Pastikan kolom kegiatan ada dan dapatkan indexnya
-      await this.ensureActivityColumn(spreadsheetId, data.activityName);
+      await this.ensureActivityColumn(spreadsheetId, data.activityName, sheetName);
       const headerResponse = await sheets.spreadsheets.values.get({
         spreadsheetId,
-        range: `${this.SHEET_NAME}!1:1`,
+        range: `${sheetName}!1:1`,
       });
       const headers = headerResponse.data.values?.[0] || [];
       const colIndex = headers.indexOf(data.activityName);
@@ -417,12 +483,13 @@ export class GoogleSheetsService {
         data.fullName,
         data.divisionName,
         data.subDivisionName,
+        sheetName,
       );
 
       // 3. Update Sel + Styling (Center & Border)
       await sheets.spreadsheets.values.update({
         spreadsheetId,
-        range: `${this.SHEET_NAME}!${colLetter}${rowIndex}`,
+        range: `${sheetName}!${colLetter}${rowIndex}`,
         valueInputOption: 'USER_ENTERED',
         requestBody: { values: [[data.status]] },
       });
@@ -430,7 +497,7 @@ export class GoogleSheetsService {
       // Berikan format rata tengah untuk sel tersebut
       const spreadsheet = await sheets.spreadsheets.get({ spreadsheetId });
       const sheet = spreadsheet.data.sheets?.find(
-        (s) => s.properties?.title === this.SHEET_NAME,
+        (s) => s.properties?.title === sheetName,
       );
       const sheetId = sheet?.properties?.sheetId || 0;
 
@@ -460,7 +527,7 @@ export class GoogleSheetsService {
       });
 
       // Update totals after updating a single cell
-      await this.updateTotals(spreadsheetId);
+      await this.updateTotals(spreadsheetId, sheetName);
     } catch (error) {
       this.logger.error('Gagal update sel Google Sheets', error);
     }
@@ -479,17 +546,18 @@ export class GoogleSheetsService {
       subDivisionName: string;
       status: string;
     }[],
+    sheetName: string = this.ATTENDANCE_SHEET_NAME,
   ) {
     try {
       const sheets = google.sheets({ version: 'v4', auth: this.client });
 
       // 1. Pastikan kolom kegiatan ada
-      await this.ensureActivityColumn(spreadsheetId, activityName);
+      await this.ensureActivityColumn(spreadsheetId, activityName, sheetName);
 
       // 2. Dapatkan headers untuk mencari index kolom
       const headerResponse = await sheets.spreadsheets.values.get({
         spreadsheetId,
-        range: `${this.SHEET_NAME}!1:1`,
+        range: `${sheetName}!1:1`,
       });
       const headers = headerResponse.data.values?.[0] || [];
       const colIndex = headers.indexOf(activityName);
@@ -498,7 +566,7 @@ export class GoogleSheetsService {
       // 3. Ambil semua NIM yang sudah ada
       const nimResponse = await sheets.spreadsheets.values.get({
         spreadsheetId,
-        range: `${this.SHEET_NAME}!C:C`,
+        range: `${sheetName}!C:C`,
       });
       const existingNims = nimResponse.data.values?.map((row) => row[0]) || [];
 
@@ -514,7 +582,7 @@ export class GoogleSheetsService {
           targetRow = nextAvailableRow++;
           const no = targetRow - 1;
           dataToUpdate.push({
-            range: `${this.SHEET_NAME}!A${targetRow}:E${targetRow}`,
+            range: `${sheetName}!A${targetRow}:E${targetRow}`,
             values: [
               [
                 no,
@@ -533,7 +601,7 @@ export class GoogleSheetsService {
 
         // Tambahkan update status
         dataToUpdate.push({
-          range: `${this.SHEET_NAME}!${colLetter}${targetRow}`,
+          range: `${sheetName}!${colLetter}${targetRow}`,
           values: [[record.status]],
         });
       }
@@ -550,7 +618,7 @@ export class GoogleSheetsService {
         // Terapkan format rata tengah untuk semua kolom status yang diupdate
         const spreadsheet = await sheets.spreadsheets.get({ spreadsheetId });
         const sheet = spreadsheet.data.sheets?.find(
-          (s) => s.properties?.title === this.SHEET_NAME,
+          (s) => s.properties?.title === sheetName,
         );
         const sheetId = sheet?.properties?.sheetId || 0;
 
@@ -579,73 +647,144 @@ export class GoogleSheetsService {
         });
 
         // Update totals after batch update
-        await this.updateTotals(spreadsheetId);
+        await this.updateTotals(spreadsheetId, sheetName);
       }
     } catch (error) {
       this.logger.error('Gagal batch update Google Sheets', error);
     }
   }
 
-  private getConditionalFormattingRequests(sheetId: number): any[] {
-    const statuses = [
-      {
-        text: 'HADIR',
-        bg: { red: 0.85, green: 0.92, blue: 0.83 },
-        fg: { red: 0.24, green: 0.46, blue: 0.24 },
-      },
-      {
-        text: 'ALFA',
-        bg: { red: 0.95, green: 0.8, blue: 0.8 },
-        fg: { red: 0.6, green: 0.1, blue: 0.1 },
-      },
-      {
-        text: 'SAKIT',
-        bg: { red: 1, green: 0.9, blue: 0.7 },
-        fg: { red: 0.6, green: 0.4, blue: 0 },
-      },
-      {
-        text: 'IZIN',
-        bg: { red: 0.9, green: 0.9, blue: 1 },
-        fg: { red: 0.1, green: 0.1, blue: 0.6 },
-      },
-    ];
+  /**
+   * Sync nilai tugas ke Google Sheets berdasarkan divisi.
+   */
+  async updateAssignmentScore(
+    spreadsheetId: string,
+    data: {
+      divisionName: string;
+      subDivisionName: string;
+      nim: string;
+      fullName: string;
+      assignmentTitle: string;
+      score: number;
+    },
+  ) {
+    const sheetName = this.getAssignmentSheetName(data.divisionName);
 
-    return statuses.map((status, index) => ({
-      addConditionalFormatRule: {
-        rule: {
-          ranges: [{ sheetId, startRowIndex: 1, startColumnIndex: 5 }], // Kolom F ke kanan
-          booleanRule: {
-            condition: {
-              type: 'TEXT_EQ',
-              values: [{ userEnteredValue: status.text }],
-            },
-            format: {
-              backgroundColor: status.bg,
-              textFormat: { foregroundColor: status.fg, bold: true },
+    // 1. Pastikan sheet ada
+    await this.ensureSheet(spreadsheetId, sheetName);
+
+    // 2. Gunakan updateAttendanceCell (generic) untuk update nilai
+    await this.updateAttendanceCell(
+      spreadsheetId,
+      {
+        nim: data.nim,
+        fullName: data.fullName,
+        divisionName: data.divisionName,
+        subDivisionName: data.subDivisionName,
+        activityName: data.assignmentTitle,
+        status: data.score.toString(),
+      },
+      sheetName,
+    );
+  }
+
+  private getConditionalFormattingRequests(
+    sheetId: number,
+    sheetName: string,
+  ): any[] {
+    if (sheetName === this.ATTENDANCE_SHEET_NAME) {
+      const statuses = [
+        {
+          text: 'HADIR',
+          bg: { red: 0.85, green: 0.92, blue: 0.83 },
+          fg: { red: 0.24, green: 0.46, blue: 0.24 },
+        },
+        {
+          text: 'ALFA',
+          bg: { red: 0.95, green: 0.8, blue: 0.8 },
+          fg: { red: 0.6, green: 0.1, blue: 0.1 },
+        },
+        {
+          text: 'SAKIT',
+          bg: { red: 1, green: 0.9, blue: 0.7 },
+          fg: { red: 0.6, green: 0.4, blue: 0 },
+        },
+        {
+          text: 'IZIN',
+          bg: { red: 0.9, green: 0.9, blue: 1 },
+          fg: { red: 0.1, green: 0.1, blue: 0.6 },
+        },
+      ];
+
+      return statuses.map((status, index) => ({
+        addConditionalFormatRule: {
+          rule: {
+            ranges: [{ sheetId, startRowIndex: 1, startColumnIndex: 5 }],
+            booleanRule: {
+              condition: {
+                type: 'TEXT_EQ',
+                values: [{ userEnteredValue: status.text }],
+              },
+              format: {
+                backgroundColor: status.bg,
+                textFormat: { foregroundColor: status.fg, bold: true },
+              },
             },
           },
+          index: index,
         },
-        index: index,
-      },
-    }));
+      }));
+    } else {
+      // Color scale for scores (Red to Green)
+      return [
+        {
+          addConditionalFormatRule: {
+            rule: {
+              ranges: [{ sheetId, startRowIndex: 1, startColumnIndex: 5 }],
+              gradientRule: {
+                minpoint: {
+                  color: { red: 0.95, green: 0.8, blue: 0.8 },
+                  type: 'NUMBER',
+                  value: '0',
+                },
+                midpoint: {
+                  color: { red: 1, green: 0.9, blue: 0.7 },
+                  type: 'NUMBER',
+                  value: '75',
+                },
+                maxpoint: {
+                  color: { red: 0.85, green: 0.92, blue: 0.83 },
+                  type: 'NUMBER',
+                  value: '100',
+                },
+              },
+            },
+            index: 0,
+          },
+        },
+      ];
+    }
   }
 
   /**
    * Recalculates the Total column formulas for all users.
    */
-  async updateTotals(spreadsheetId: string) {
+  async updateTotals(
+    spreadsheetId: string,
+    sheetName: string = this.ATTENDANCE_SHEET_NAME,
+  ) {
     try {
       const sheets = google.sheets({ version: 'v4', auth: this.client });
       const headerResponse = await sheets.spreadsheets.values.get({
         spreadsheetId,
-        range: `${this.SHEET_NAME}!1:1`,
+        range: `${sheetName}!1:1`,
       });
       const headers = headerResponse.data.values?.[0] || [];
 
       const totalIndex = headers.indexOf(this.TOTAL_HEADER);
       if (totalIndex === -1) {
         // If Total not present, ensure it exists
-        await this.ensureTotalColumn(spreadsheetId);
+        await this.ensureTotalColumn(spreadsheetId, sheetName);
         return;
       }
 
@@ -656,7 +795,7 @@ export class GoogleSheetsService {
         // No activity columns, set totals to 0 for existing rows
         const nimResponse = await sheets.spreadsheets.values.get({
           spreadsheetId,
-          range: `${this.SHEET_NAME}!C:C`,
+          range: `${sheetName}!C:C`,
         });
         const rows = nimResponse.data.values?.length || 0;
         if (rows > 1) {
@@ -664,7 +803,7 @@ export class GoogleSheetsService {
           for (let r = 2; r <= rows; r++) {
             const colLetter = this.columnToLetter(totalIndex + 1);
             updates.push({
-              range: `${this.SHEET_NAME}!${colLetter}${r}`,
+              range: `${sheetName}!${colLetter}${r}`,
               values: [[0]],
             });
           }
@@ -684,17 +823,21 @@ export class GoogleSheetsService {
       // Get number of rows (NIM column)
       const nimResponse = await sheets.spreadsheets.values.get({
         spreadsheetId,
-        range: `${this.SHEET_NAME}!C:C`,
+        range: `${sheetName}!C:C`,
       });
       const existingNims = nimResponse.data.values?.map((r) => r[0]) || [];
       const rows = existingNims.length;
 
+      const isAttendance = sheetName === this.ATTENDANCE_SHEET_NAME;
+
       const updates: sheets_v4.Schema$ValueRange[] = [];
       for (let i = 2; i <= rows; i++) {
-        const formula = `=COUNTIF(${startLetter}${i}:${endLetter}${i},"HADIR")`;
+        const formula = isAttendance
+          ? `=COUNTIF(${startLetter}${i}:${endLetter}${i},"HADIR")`
+          : `=AVERAGE(${startLetter}${i}:${endLetter}${i})`;
         const colLetter = this.columnToLetter(totalIndex + 1);
         updates.push({
-          range: `${this.SHEET_NAME}!${colLetter}${i}`,
+          range: `${sheetName}!${colLetter}${i}`,
           values: [[formula]],
         });
       }

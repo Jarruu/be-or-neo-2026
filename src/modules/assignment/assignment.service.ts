@@ -13,6 +13,7 @@ import {
   AttemptStatus,
   UserRole,
 } from '../../../prisma/generated-client/client';
+import { GoogleSheetsService } from '../../common/services/google-sheets.service';
 
 @Injectable()
 export class AssignmentService {
@@ -38,6 +39,7 @@ export class AssignmentService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly storage: CloudinaryStorageService,
+    private readonly googleSheetsService: GoogleSheetsService,
   ) {}
 
   // --- Assignment Management (Admin) ---
@@ -281,16 +283,46 @@ export class AssignmentService {
   async scoreSubmission(submissionId: string, dto: ScoreSubmissionDto) {
     const submission = await this.prisma.assignmentSubmission.findUnique({
       where: { id: submissionId },
+      include: {
+        user: {
+          include: {
+            profile: {
+              include: { division: true, subDivision: true },
+            },
+          },
+        },
+        assignment: true,
+      },
     });
     if (!submission) throw new NotFoundException('Submission not found');
 
-    return this.prisma.assignmentSubmission.update({
+    const result = await this.prisma.assignmentSubmission.update({
       where: { id: submissionId },
       data: {
         score: dto.score,
         feedback: dto.feedback,
       },
     });
+
+    // Sinkronisasi ke Google Sheets secara otomatis (per Divisi)
+    const spreadsheetId = process.env.ASSIGNMENT_SPREADSHEET_ID;
+    const profile = submission.user.profile;
+    if (spreadsheetId && profile && (profile as any).division) {
+      try {
+        await this.googleSheetsService.updateAssignmentScore(spreadsheetId, {
+          divisionName: (profile as any).division.name,
+          subDivisionName: (profile as any).subDivision?.name || '-',
+          nim: profile.nim,
+          fullName: profile.fullName,
+          assignmentTitle: submission.assignment.title,
+          score: Number(dto.score),
+        });
+      } catch (error) {
+        // Log error but proceed
+      }
+    }
+
+    return result;
   }
 
   async downloadSubmission(submissionId: string, userId: string, role: UserRole) {

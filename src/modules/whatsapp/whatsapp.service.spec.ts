@@ -18,6 +18,11 @@ describe('WhatsAppService', () => {
             profile: {
               findMany: jest.fn(),
             },
+            scheduledWhatsApp: {
+              create: jest.fn(),
+              findMany: jest.fn(),
+              update: jest.fn(),
+            },
           },
         },
         {
@@ -36,6 +41,61 @@ describe('WhatsAppService', () => {
 
   it('should be defined', () => {
     expect(service).toBeDefined();
+  });
+
+  describe('scheduleMessage', () => {
+    it('should create a scheduled message in database', async () => {
+      const mockMsg = 'Test message';
+      const mockDate = new Date();
+      (prisma.scheduledWhatsApp.create as jest.Mock).mockResolvedValue({ id: '1' });
+
+      await service.scheduleMessage(mockMsg, mockDate);
+
+      expect(prisma.scheduledWhatsApp.create).toHaveBeenCalledWith({
+        data: {
+          message: mockMsg,
+          scheduledAt: mockDate,
+        },
+      });
+    });
+  });
+
+  describe('handleScheduledMessages', () => {
+    it('should send messages that are due and update their status', async () => {
+      const mockScheduledMessages = [
+        { id: '1', message: 'Hello 1', scheduledAt: new Date() },
+      ];
+      (prisma.scheduledWhatsApp.findMany as jest.Mock).mockResolvedValue(
+        mockScheduledMessages,
+      );
+      // Mock profiles for sendBulkToAllUsers which is called inside handleScheduledMessages
+      (prisma.profile.findMany as jest.Mock).mockResolvedValue([
+        {
+          whatsappNumber: '62812',
+          nickName: 'User 1',
+          fullName: 'Full User 1',
+        },
+      ]);
+      (waway.sendBulk as jest.Mock).mockResolvedValue({ status: 'success' });
+      (prisma.scheduledWhatsApp.update as jest.Mock).mockResolvedValue({});
+
+      await service.handleScheduledMessages();
+
+      expect(prisma.scheduledWhatsApp.findMany).toHaveBeenCalled();
+      expect(waway.sendBulk).toHaveBeenCalled();
+      expect(prisma.scheduledWhatsApp.update).toHaveBeenCalledWith({
+        where: { id: '1' },
+        data: expect.objectContaining({ isSent: true }),
+      });
+    });
+
+    it('should not do anything if no messages are due', async () => {
+      (prisma.scheduledWhatsApp.findMany as jest.Mock).mockResolvedValue([]);
+
+      await service.handleScheduledMessages();
+
+      expect(waway.sendBulk).not.toHaveBeenCalled();
+    });
   });
 
   describe('sendBulkToAllUsers', () => {
