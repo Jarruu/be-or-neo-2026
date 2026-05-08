@@ -333,207 +333,6 @@ export class GoogleSheetsService {
   }
 
   /**
-   * Clear a single attendance cell (user + activity) — set to empty value.
-   */
-  async clearAttendanceCell(
-    spreadsheetId: string,
-    activityName: string,
-    nim: string,
-    sheetName: string = this.ATTENDANCE_SHEET_NAME,
-  ) {
-    try {
-      const sheets = google.sheets({ version: 'v4', auth: this.client });
-      const headerResponse = await sheets.spreadsheets.values.get({
-        spreadsheetId,
-        range: `${sheetName}!1:1`,
-      });
-      const headers = headerResponse.data.values?.[0] || [];
-      const colIndex = headers.indexOf(activityName);
-      if (colIndex === -1) return; // activity column not found
-
-      // Find row by NIM
-      const nimResponse = await sheets.spreadsheets.values.get({
-        spreadsheetId,
-        range: `${sheetName}!C:C`,
-      });
-      const nims = nimResponse.data.values?.map((r) => r[0]) || [];
-      const rowIndex = nims.indexOf(nim);
-      if (rowIndex === -1) return; // user row not found
-
-      const rowNumber = rowIndex + 1; // 1-indexed
-      const colLetter = this.columnToLetter(colIndex + 1);
-
-      // Set the cell to 'ALFA' (mark as absent) instead of empty
-      await sheets.spreadsheets.values.update({
-        spreadsheetId,
-        range: `${sheetName}!${colLetter}${rowNumber}`,
-        valueInputOption: 'USER_ENTERED',
-        requestBody: { values: [['ALFA']] },
-      });
-
-      // Apply same formatting as regular updates (center alignment)
-      const spreadsheet = await sheets.spreadsheets.get({ spreadsheetId });
-      const sheet = spreadsheet.data.sheets?.find(
-        (s) => s.properties?.title === sheetName,
-      );
-      const sheetId = sheet?.properties?.sheetId || 0;
-
-      await sheets.spreadsheets.batchUpdate({
-        spreadsheetId,
-        requestBody: {
-          requests: [
-            {
-              repeatCell: {
-                range: {
-                  sheetId,
-                  startRowIndex: rowNumber - 1,
-                  endRowIndex: rowNumber,
-                  startColumnIndex: colIndex,
-                  endColumnIndex: colIndex + 1,
-                },
-                cell: {
-                  userEnteredFormat: {
-                    horizontalAlignment: 'CENTER',
-                  },
-                },
-                fields: 'userEnteredFormat(horizontalAlignment)',
-              },
-            },
-          ],
-        },
-      });
-
-      // Recalculate totals after clearing
-      await this.updateTotals(spreadsheetId, sheetName);
-    } catch (error) {
-      this.logger.error('Gagal membersihkan sel absensi', error);
-    }
-  }
-
-  /**
-   * Mencari baris user berdasarkan NIM, jika tidak ada maka buat baris baru dengan info lengkap.
-   */
-  async ensureUserRow(
-    spreadsheetId: string,
-    nim: string,
-    fullName: string,
-    divisionName: string,
-    subDivisionName: string,
-    sheetName: string = this.ATTENDANCE_SHEET_NAME,
-  ) {
-    const sheets = google.sheets({ version: 'v4', auth: this.client });
-    const response = await sheets.spreadsheets.values.get({
-      spreadsheetId,
-      range: `${sheetName}!C:C`, // NIM sekarang di kolom C
-    });
-
-    const nims = response.data.values?.map((row) => row[0]) || [];
-    const rowIndex = nims.indexOf(nim);
-
-    if (rowIndex === -1) {
-      const nextRow = nims.length + 1;
-      const no = nims.length; // Nomor urut (nims sudah termasuk header di index 0)
-
-      await sheets.spreadsheets.values.update({
-        spreadsheetId,
-        range: `${sheetName}!A${nextRow}:E${nextRow}`,
-        valueInputOption: 'USER_ENTERED',
-        requestBody: {
-          values: [[no, fullName, nim, divisionName, subDivisionName]],
-        },
-      });
-      return nextRow;
-    }
-
-    return rowIndex + 1; // Return nomor baris (1-indexed)
-  }
-
-  /**
-   * Update status di sel tertentu (Pertemuan antara Baris User dan Kolom Kegiatan)
-   */
-  async updateAttendanceCell(
-    spreadsheetId: string,
-    data: {
-      nim: string;
-      fullName: string;
-      divisionName: string;
-      subDivisionName: string;
-      activityName: string;
-      status: string;
-    },
-    sheetName: string = this.ATTENDANCE_SHEET_NAME,
-  ) {
-    try {
-      const sheets = google.sheets({ version: 'v4', auth: this.client });
-
-      // 1. Pastikan kolom kegiatan ada dan dapatkan indexnya
-      await this.ensureActivityColumn(spreadsheetId, data.activityName, sheetName);
-      const headerResponse = await sheets.spreadsheets.values.get({
-        spreadsheetId,
-        range: `${sheetName}!1:1`,
-      });
-      const headers = headerResponse.data.values?.[0] || [];
-      const colIndex = headers.indexOf(data.activityName);
-      const colLetter = this.columnToLetter(colIndex + 1);
-
-      // 2. Dapatkan baris user (dengan data lengkap)
-      const rowIndex = await this.ensureUserRow(
-        spreadsheetId,
-        data.nim,
-        data.fullName,
-        data.divisionName,
-        data.subDivisionName,
-        sheetName,
-      );
-
-      // 3. Update Sel + Styling (Center & Border)
-      await sheets.spreadsheets.values.update({
-        spreadsheetId,
-        range: `${sheetName}!${colLetter}${rowIndex}`,
-        valueInputOption: 'USER_ENTERED',
-        requestBody: { values: [[data.status]] },
-      });
-
-      // Berikan format rata tengah untuk sel tersebut
-      const spreadsheet = await sheets.spreadsheets.get({ spreadsheetId });
-      const sheet = spreadsheet.data.sheets?.find(
-        (s) => s.properties?.title === sheetName,
-      );
-      const sheetId = sheet?.properties?.sheetId || 0;
-
-      await sheets.spreadsheets.batchUpdate({
-        spreadsheetId,
-        requestBody: {
-          requests: [
-            {
-              repeatCell: {
-                range: {
-                  sheetId,
-                  startRowIndex: rowIndex - 1,
-                  endRowIndex: rowIndex,
-                  startColumnIndex: colIndex,
-                  endColumnIndex: colIndex + 1,
-                },
-                cell: {
-                  userEnteredFormat: {
-                    horizontalAlignment: 'CENTER',
-                  },
-                },
-                fields: 'userEnteredFormat(horizontalAlignment)',
-              },
-            },
-          ],
-        },
-      });
-
-      // Update totals after updating a single cell
-      await this.updateTotals(spreadsheetId, sheetName);
-    } catch (error) {
-      this.logger.error('Gagal update sel Google Sheets', error);
-    }
-  }
-
-  /**
    * Update multiple attendance cells in one go (batch update)
    */
   async batchUpdateAttendance(
@@ -655,35 +454,33 @@ export class GoogleSheetsService {
   }
 
   /**
-   * Sync nilai tugas ke Google Sheets berdasarkan divisi.
+   * Sync nilai tugas ke Google Sheets berdasarkan divisi secara massal (batch).
    */
-  async updateAssignmentScore(
+  async batchUpdateAssignmentScores(
     spreadsheetId: string,
-    data: {
-      divisionName: string;
-      subDivisionName: string;
+    divisionName: string,
+    assignmentTitle: string,
+    records: {
       nim: string;
       fullName: string;
-      assignmentTitle: string;
+      divisionName: string;
+      subDivisionName: string;
       score: number;
-    },
+    }[],
   ) {
-    const sheetName = this.getAssignmentSheetName(data.divisionName);
+    const sheetName = this.getAssignmentSheetName(divisionName);
 
     // 1. Pastikan sheet ada
     await this.ensureSheet(spreadsheetId, sheetName);
 
-    // 2. Gunakan updateAttendanceCell (generic) untuk update nilai
-    await this.updateAttendanceCell(
+    // 2. Gunakan batchUpdateAttendance (generic) untuk update nilai
+    await this.batchUpdateAttendance(
       spreadsheetId,
-      {
-        nim: data.nim,
-        fullName: data.fullName,
-        divisionName: data.divisionName,
-        subDivisionName: data.subDivisionName,
-        activityName: data.assignmentTitle,
-        status: data.score.toString(),
-      },
+      assignmentTitle,
+      records.map((r) => ({
+        ...r,
+        status: r.score.toString(),
+      })),
       sheetName,
     );
   }

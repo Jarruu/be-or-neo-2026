@@ -253,21 +253,8 @@ export class AttendanceService {
       });
     }
 
-    // Sinkronisasi ke Google Sheets secara Real-Time (Matrix Style)
-    const spreadsheetId = process.env.ATTENDANCE_SPREADSHEET_ID;
-    if (spreadsheetId) {
-      const profile = result.user.profile;
-      if (profile) {
-        await this.googleSheetsService.updateAttendanceCell(spreadsheetId, {
-          nim: profile.nim,
-          fullName: profile.fullName,
-          divisionName: (profile as any).division?.name || '-',
-          subDivisionName: (profile as any).subDivision?.name || '-',
-          activityName: result.activity.name,
-          status: 'HADIR',
-        });
-      }
-    }
+    // Sinkronisasi ke Google Sheets secara otomatis untuk SELURUH absensi pada activity ini
+    await this.syncActivityToSheets(result.activityId, result.activity.name);
 
     return result;
   }
@@ -299,25 +286,12 @@ export class AttendanceService {
             },
           },
         },
-        activity: { select: { name: true } },
+        activity: { select: { id: true, name: true } },
       },
     });
 
-    // Sinkronisasi ke Google Sheets jika status berubah
-    const spreadsheetId = process.env.ATTENDANCE_SPREADSHEET_ID;
-    if (spreadsheetId) {
-      const profile = result.user.profile;
-      if (profile) {
-        await this.googleSheetsService.updateAttendanceCell(spreadsheetId, {
-          nim: profile.nim,
-          fullName: profile.fullName,
-          divisionName: (profile as any).division?.name || '-',
-          subDivisionName: (profile as any).subDivision?.name || '-',
-          activityName: result.activity.name,
-          status: this.formatStatus(result.status),
-        });
-      }
-    }
+    // Sinkronisasi ke Google Sheets secara otomatis untuk SELURUH absensi pada activity ini
+    await this.syncActivityToSheets(result.activity.id, result.activity.name);
 
     return result;
   }
@@ -327,7 +301,7 @@ export class AttendanceService {
       where: { id: attendanceId },
       include: {
         user: { select: { profile: { select: { nim: true } } } },
-        activity: { select: { name: true } },
+        activity: { select: { id: true, name: true } },
       },
     });
 
@@ -335,21 +309,64 @@ export class AttendanceService {
       throw new NotFoundException('Data absensi tidak ditemukan');
     }
 
-    // Best-effort: clear spreadsheet cell
-    const spreadsheetId = process.env.ATTENDANCE_SPREADSHEET_ID;
-    if (spreadsheetId && attendance.user?.profile?.nim) {
-      try {
-        await this.googleSheetsService.clearAttendanceCell(
-          spreadsheetId,
-          attendance.activity.name,
-          attendance.user.profile.nim,
-        );
-      } catch (error) {
-        // ignore sheet errors and proceed with DB deletion
-      }
-    }
+    const result = await this.prisma.attendance.delete({
+      where: { id: attendanceId },
+    });
 
-    return await this.prisma.attendance.delete({ where: { id: attendanceId } });
+    // Sinkronisasi ulang untuk memastikan spreadsheet akurat setelah penghapusan
+    await this.syncActivityToSheets(attendance.activity.id, attendance.activity.name);
+
+    return result;
+  }
+
+  /**
+   * Mengirimkan seluruh data absensi untuk satu kegiatan ke Google Sheets.
+   * Ini memastikan data lama dan baru sinkron sepenuhnya.
+   */
+  private async syncActivityToSheets(activityId: string, activityName: string) {
+    const spreadsheetId = process.env.ATTENDANCE_SPREADSHEET_ID;
+    if (!spreadsheetId) return;
+
+    try {
+      // Ambil seluruh user yang sudah disetujui (Approved)
+      // Kita ingin memastikan semua yang berhak ikut kegiatan ada di spreadsheet
+      const approvedUsers = await this.prisma.user.findMany({
+        where: {
+          submissionVerifications: { some: { status: 'APPROVED' } },
+          role: 'USER',
+          isActive: true,
+        },
+        include: {
+          profile: { include: { division: true, subDivision: true } },
+          attendances: {
+            where: { activityId },
+          },
+        },
+      });
+
+      const records = approvedUsers
+        .filter((u) => u.profile)
+        .map((u) => {
+          const attendance = u.attendances[0];
+          return {
+            nim: u.profile!.nim,
+            fullName: u.profile!.fullName,
+            divisionName: (u.profile as any).division?.name || '-',
+            subDivisionName: (u.profile as any).subDivision?.name || '-',
+            status: attendance ? this.formatStatus(attendance.status) : 'ALFA',
+          };
+        });
+
+      if (records.length > 0) {
+        await this.googleSheetsService.batchUpdateAttendance(
+          spreadsheetId,
+          activityName,
+          records,
+        );
+      }
+    } catch (error) {
+      // Log error but don't disrupt the flow
+    }
   }
 
   async getMyAttendances(userId: string) {

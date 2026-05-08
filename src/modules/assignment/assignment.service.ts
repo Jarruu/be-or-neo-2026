@@ -304,25 +304,78 @@ export class AssignmentService {
       },
     });
 
-    // Sinkronisasi ke Google Sheets secara otomatis (per Divisi)
-    const spreadsheetId = process.env.ASSIGNMENT_SPREADSHEET_ID;
+    // Sinkronisasi ke Google Sheets secara otomatis untuk SELURUH nilai pada assignment & divisi ini
     const profile = submission.user.profile;
-    if (spreadsheetId && profile && (profile as any).division) {
-      try {
-        await this.googleSheetsService.updateAssignmentScore(spreadsheetId, {
-          divisionName: (profile as any).division.name,
-          subDivisionName: (profile as any).subDivision?.name || '-',
-          nim: profile.nim,
-          fullName: profile.fullName,
-          assignmentTitle: submission.assignment.title,
-          score: Number(dto.score),
-        });
-      } catch (error) {
-        // Log error but proceed
-      }
+    if (profile && (profile as any).division) {
+      await this.syncAssignmentToSheets(
+        submission.assignmentId,
+        (profile as any).divisionId,
+        (profile as any).division.name,
+        submission.assignment.title,
+      );
     }
 
     return result;
+  }
+
+  /**
+   * Mengirimkan seluruh nilai tugas dalam satu divisi ke Google Sheets.
+   * Ini memastikan data lama dan baru sinkron sepenuhnya.
+   */
+  private async syncAssignmentToSheets(
+    assignmentId: string,
+    divisionId: string,
+    divisionName: string,
+    assignmentTitle: string,
+  ) {
+    const spreadsheetId = process.env.ASSIGNMENT_SPREADSHEET_ID;
+    if (!spreadsheetId) return;
+
+    try {
+      // Ambil seluruh submission yang sudah dinilai dalam divisi tersebut
+      const allDivisionSubmissions =
+        await this.prisma.assignmentSubmission.findMany({
+          where: {
+            assignmentId,
+            score: { not: null },
+            user: {
+              profile: {
+                divisionId,
+              },
+            },
+          },
+          include: {
+            user: {
+              include: {
+                profile: {
+                  include: { division: true, subDivision: true },
+                },
+              },
+            },
+          },
+        });
+
+      const records = allDivisionSubmissions
+        .filter((s) => s.user?.profile)
+        .map((s) => ({
+          nim: s.user.profile!.nim,
+          fullName: s.user.profile!.fullName,
+          divisionName: (s.user.profile as any).division?.name || '-',
+          subDivisionName: (s.user.profile as any).subDivision?.name || '-',
+          score: Number(s.score),
+        }));
+
+      if (records.length > 0) {
+        await this.googleSheetsService.batchUpdateAssignmentScores(
+          spreadsheetId,
+          divisionName,
+          assignmentTitle,
+          records,
+        );
+      }
+    } catch (error) {
+      // Log error but proceed
+    }
   }
 
   async downloadSubmission(submissionId: string, userId: string, role: UserRole) {
