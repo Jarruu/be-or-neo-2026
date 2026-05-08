@@ -338,20 +338,34 @@ export class AssignmentService {
     if (!spreadsheetId) return;
 
     try {
-      // Ambil seluruh user yang berada di divisi ini (baik langsung maupun via sub-divisi)
+      // 1. Cari semua ID Assignment yang memiliki judul sama dalam divisi ini
+      // Karena Assignment bisa dibuat per sub-divisi, kita harus mengumpulkan semuanya
+      const relatedAssignments = await this.prisma.assignment.findMany({
+        where: {
+          title: assignmentTitle,
+          subDivision: { divisionId: divisionId },
+        },
+        select: { id: true },
+      });
+      const assignmentIds = relatedAssignments.map((a) => a.id);
+
+      // 2. Ambil seluruh user yang berada di divisi ini (baik langsung maupun via sub-divisi)
       const approvedUsersInDivision = await this.prisma.user.findMany({
         where: {
           submissionVerifications: { some: { status: 'APPROVED' } },
           role: 'USER',
           isActive: true,
           profile: {
-            OR: [{ divisionId: divisionId }, { subDivision: { divisionId: divisionId } }],
+            OR: [
+              { divisionId: divisionId },
+              { subDivision: { divisionId: divisionId } },
+            ],
           },
         },
         include: {
           profile: { include: { division: true, subDivision: true } },
           assignmentSubmissions: {
-            where: { assignmentId: assignmentId },
+            where: { assignmentId: { in: assignmentIds } },
           },
         },
       });
@@ -359,7 +373,9 @@ export class AssignmentService {
       const records = approvedUsersInDivision
         .filter((u) => u.profile)
         .map((u) => {
-          const submission = u.assignmentSubmissions[0];
+          // Cari submission yang memiliki skor (jika ada beberapa)
+          const submission = u.assignmentSubmissions.find((s) => s.score !== null) || u.assignmentSubmissions[0];
+          
           return {
             nim: u.profile!.nim,
             fullName: u.profile!.fullName,
