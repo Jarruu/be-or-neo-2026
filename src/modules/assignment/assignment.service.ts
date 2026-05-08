@@ -287,7 +287,10 @@ export class AssignmentService {
         user: {
           include: {
             profile: {
-              include: { division: true, subDivision: true },
+              include: {
+                division: true,
+                subDivision: { include: { division: true } },
+              },
             },
           },
         },
@@ -305,12 +308,15 @@ export class AssignmentService {
     });
 
     // Sinkronisasi ke Google Sheets secara otomatis untuk SELURUH nilai pada assignment & divisi ini
-    const profile = submission.user.profile;
-    if (profile && (profile as any).division) {
+    const profile = submission.user.profile as any;
+    const divisionId = profile?.divisionId || profile?.subDivision?.divisionId;
+    const divisionName = profile?.division?.name || profile?.subDivision?.division?.name;
+
+    if (divisionId && divisionName) {
       await this.syncAssignmentToSheets(
         submission.assignmentId,
-        (profile as any).divisionId,
-        (profile as any).division.name,
+        divisionId,
+        divisionName,
         submission.assignment.title,
       );
     }
@@ -339,13 +345,13 @@ export class AssignmentService {
           role: 'USER',
           isActive: true,
           profile: {
-            OR: [{ divisionId }, { subDivision: { divisionId } }],
+            OR: [{ divisionId: divisionId }, { subDivision: { divisionId: divisionId } }],
           },
         },
         include: {
           profile: { include: { division: true, subDivision: true } },
           assignmentSubmissions: {
-            where: { assignmentId },
+            where: { assignmentId: assignmentId },
           },
         },
       });
@@ -359,7 +365,9 @@ export class AssignmentService {
             fullName: u.profile!.fullName,
             divisionName: (u.profile as any).division?.name || '-',
             subDivisionName: (u.profile as any).subDivision?.name || '-',
-            score: submission?.score ? Number(submission.score) : 0,
+            score: (submission && submission.score !== null && submission.score !== undefined) 
+              ? Number(submission.score) 
+              : 0,
           };
         });
 
