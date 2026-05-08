@@ -307,16 +307,16 @@ export class AssignmentService {
       },
     });
 
-    // Sinkronisasi ke Google Sheets secara otomatis untuk SELURUH nilai pada assignment & divisi ini
+    // Sinkronisasi ke Google Sheets secara otomatis untuk SELURUH nilai pada assignment & sub-divisi ini
     const profile = submission.user.profile as any;
-    const divisionId = profile?.divisionId || profile?.subDivision?.divisionId;
-    const divisionName = profile?.division?.name || profile?.subDivision?.division?.name;
+    const subDivisionId = profile?.subDivisionId;
+    const subDivisionName = profile?.subDivision?.name;
 
-    if (divisionId && divisionName) {
+    if (subDivisionId && subDivisionName) {
       await this.syncAssignmentToSheets(
         submission.assignmentId,
-        divisionId,
-        divisionName,
+        subDivisionId,
+        subDivisionName,
         submission.assignment.title,
       );
     }
@@ -325,57 +325,41 @@ export class AssignmentService {
   }
 
   /**
-   * Mengirimkan seluruh nilai tugas dalam satu divisi ke Google Sheets.
+   * Mengirimkan seluruh nilai tugas dalam satu sub-divisi ke Google Sheets.
    * Ini memastikan data lama dan baru sinkron sepenuhnya.
    */
   private async syncAssignmentToSheets(
     assignmentId: string,
-    divisionId: string,
-    divisionName: string,
+    subDivisionId: string,
+    subDivisionName: string,
     assignmentTitle: string,
   ) {
     const spreadsheetId = process.env.ASSIGNMENT_SPREADSHEET_ID;
     if (!spreadsheetId) return;
 
     try {
-      // 1. Cari semua ID Assignment yang memiliki judul sama dalam divisi ini
-      // Karena Assignment bisa dibuat per sub-divisi, kita harus mengumpulkan semuanya
-      const relatedAssignments = await this.prisma.assignment.findMany({
-        where: {
-          title: assignmentTitle,
-          subDivision: { divisionId: divisionId },
-        },
-        select: { id: true },
-      });
-      const assignmentIds = relatedAssignments.map((a) => a.id);
-
-      // 2. Ambil seluruh user yang berada di divisi ini (baik langsung maupun via sub-divisi)
-      const approvedUsersInDivision = await this.prisma.user.findMany({
+      // Ambil seluruh user yang berada di sub-divisi ini
+      const approvedUsersInSubDivision = await this.prisma.user.findMany({
         where: {
           submissionVerifications: { some: { status: 'APPROVED' } },
           role: 'USER',
           isActive: true,
           profile: {
-            OR: [
-              { divisionId: divisionId },
-              { subDivision: { divisionId: divisionId } },
-            ],
+            subDivisionId: subDivisionId,
           },
         },
         include: {
           profile: { include: { division: true, subDivision: true } },
           assignmentSubmissions: {
-            where: { assignmentId: { in: assignmentIds } },
+            where: { assignmentId: assignmentId },
           },
         },
       });
 
-      const records = approvedUsersInDivision
+      const records = approvedUsersInSubDivision
         .filter((u) => u.profile)
         .map((u) => {
-          // Cari submission yang memiliki skor (jika ada beberapa)
-          const submission = u.assignmentSubmissions.find((s) => s.score !== null) || u.assignmentSubmissions[0];
-          
+          const submission = u.assignmentSubmissions[0];
           return {
             nim: u.profile!.nim,
             fullName: u.profile!.fullName,
@@ -390,7 +374,7 @@ export class AssignmentService {
       if (records.length > 0) {
         await this.googleSheetsService.batchUpdateAssignmentScores(
           spreadsheetId,
-          divisionName,
+          subDivisionName,
           assignmentTitle,
           records,
         );

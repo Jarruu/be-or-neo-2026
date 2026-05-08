@@ -27,13 +27,11 @@ export class GoogleSheetsService {
   }
 
   /**
-   * Mendapatkan nama sheet berdasarkan divisi (khusus tugas).
+   * Mendapatkan nama sheet berdasarkan sub-divisi (khusus tugas).
    */
-  private getAssignmentSheetName(divisionName: string): string {
-    if (divisionName === 'Multimedia dan Desain') return 'Penilaian MMD';
-    if (divisionName === 'Sistem Komputer Jaringan') return 'Penilaian SKJ';
-    if (divisionName === 'Programming') return 'Penilaian Programming';
-    return `Penilaian ${divisionName}`;
+  private getAssignmentSheetName(subDivisionName: string): string {
+    // Menghasilkan "Penilaian Web Programming", "Penilaian UI/UX", dll.
+    return `Penilaian ${subDivisionName}`;
   }
 
   /**
@@ -473,11 +471,11 @@ export class GoogleSheetsService {
   }
 
   /**
-   * Sync nilai tugas ke Google Sheets berdasarkan divisi secara massal (batch).
+   * Sync nilai tugas ke Google Sheets berdasarkan sub-divisi secara massal (batch).
    */
   async batchUpdateAssignmentScores(
     spreadsheetId: string,
-    divisionName: string,
+    subDivisionName: string,
     assignmentTitle: string,
     records: {
       nim: string;
@@ -487,7 +485,7 @@ export class GoogleSheetsService {
       score: number;
     }[],
   ) {
-    const sheetName = this.getAssignmentSheetName(divisionName);
+    const sheetName = this.getAssignmentSheetName(subDivisionName);
 
     // 1. Pastikan sheet ada
     await this.ensureSheet(spreadsheetId, sheetName);
