@@ -30,8 +30,19 @@ export class GoogleSheetsService {
    * Mendapatkan nama sheet berdasarkan sub-divisi (khusus tugas).
    */
   private getAssignmentSheetName(subDivisionName: string): string {
-    // Menghasilkan "Penilaian Web Programming", "Penilaian UI/UX", dll.
-    return `Penilaian ${subDivisionName}`;
+    // Normalisasi nama sub-divisi agar sesuai dengan sheet yang disiapkan user
+    let normalizedName = subDivisionName.trim();
+
+    // Pemetaan khusus (Case Sensitive di Database vs Keinginan User di Spreadsheet)
+    if (normalizedName.toLowerCase() === 'ui/ux' || normalizedName.toLowerCase() === 'ui ux') {
+      normalizedName = 'UI/UX';
+    } else if (normalizedName.toLowerCase() === 'design grafis') {
+      normalizedName = '3D';
+    } else if (normalizedName.toLowerCase() === 'system') {
+      normalizedName = 'System & Cloud';
+    }
+
+    return `Penilaian ${normalizedName}`;
   }
 
   /**
@@ -40,8 +51,10 @@ export class GoogleSheetsService {
   async ensureSheet(spreadsheetId: string, sheetName: string) {
     const sheets = google.sheets({ version: 'v4', auth: this.client });
     const spreadsheet = await sheets.spreadsheets.get({ spreadsheetId });
+    
+    // Cari sheet secara case-insensitive agar lebih fleksibel
     const sheet = spreadsheet.data.sheets?.find(
-      (s) => s.properties?.title === sheetName,
+      (s) => s.properties?.title?.toLowerCase() === sheetName.toLowerCase(),
     );
 
     if (!sheet) {
