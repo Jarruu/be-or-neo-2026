@@ -140,10 +140,17 @@ export class GoogleSheetsService {
       headers = this.BASE_HEADERS;
     }
 
-    // 3. Tambah kolom kegiatan jika belum ada
-    if (!headers.includes(activityName)) {
+    // 3. Tambah kolom kegiatan jika belum ada (Gunakan pencarian yang lebih fleksibel/robust)
+    const normalizedActivityName = activityName.trim();
+    const existingIndex = headers.findIndex(
+      (h) => h?.toString().trim() === normalizedActivityName,
+    );
+
+    if (existingIndex === -1) {
       // If Total header exists, insert new activity before Total so Total stays rightmost
-      const totalIndex = headers.indexOf(this.TOTAL_HEADER);
+      const totalIndex = headers.findIndex(
+        (h) => h?.toString().trim() === this.TOTAL_HEADER,
+      );
       let insertIndex = headers.length;
       if (totalIndex !== -1) {
         insertIndex = totalIndex;
@@ -227,7 +234,9 @@ export class GoogleSheetsService {
       range: `${sheetName}!1:1`,
     });
     const headers = headerResponse.data.values?.[0] || [];
-    const totalIndex = headers.indexOf(this.TOTAL_HEADER);
+    const totalIndex = headers.findIndex(
+      (h) => h?.toString().trim() === this.TOTAL_HEADER,
+    );
 
     if (totalIndex === -1) {
       // Append Total at the end
@@ -359,21 +368,31 @@ export class GoogleSheetsService {
         range: `${sheetName}!1:1`,
       });
       const headers = headerResponse.data.values?.[0] || [];
-      const colIndex = headers.indexOf(activityName);
+      const normalizedActivityName = activityName.trim();
+      const colIndex = headers.findIndex(
+        (h) => h?.toString().trim() === normalizedActivityName,
+      );
+
+      if (colIndex === -1) {
+        throw new Error(`Kolom "${activityName}" tidak ditemukan di spreadsheet.`);
+      }
+
       const colLetter = this.columnToLetter(colIndex + 1);
 
-      // 3. Ambil semua NIM yang sudah ada
+      // 3. Ambil semua NIM yang sudah ada (Gunakan trim untuk konsistensi)
       const nimResponse = await sheets.spreadsheets.values.get({
         spreadsheetId,
         range: `${sheetName}!C:C`,
       });
-      const existingNims = nimResponse.data.values?.map((row) => row[0]) || [];
+      const existingNims =
+        nimResponse.data.values?.map((row) => row[0]?.toString().trim()) || [];
 
       const dataToUpdate: any[] = [];
       let nextAvailableRow = existingNims.length + 1;
 
       for (const record of records) {
-        let rowIndex = existingNims.indexOf(record.nim);
+        const normalizedNim = record.nim.trim();
+        let rowIndex = existingNims.indexOf(normalizedNim);
         let targetRow;
 
         if (rowIndex === -1) {
@@ -393,7 +412,7 @@ export class GoogleSheetsService {
             ],
           });
           // Tambahkan ke existingNims agar tidak duplikat jika ada record yang sama dalam batch
-          existingNims.push(record.nim);
+          existingNims.push(normalizedNim);
         } else {
           targetRow = rowIndex + 1;
         }
@@ -578,7 +597,9 @@ export class GoogleSheetsService {
       });
       const headers = headerResponse.data.values?.[0] || [];
 
-      const totalIndex = headers.indexOf(this.TOTAL_HEADER);
+      const totalIndex = headers.findIndex(
+        (h) => h?.toString().trim() === this.TOTAL_HEADER,
+      );
       if (totalIndex === -1) {
         // If Total not present, ensure it exists
         await this.ensureTotalColumn(spreadsheetId, sheetName);

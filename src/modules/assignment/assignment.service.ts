@@ -332,38 +332,36 @@ export class AssignmentService {
     if (!spreadsheetId) return;
 
     try {
-      // Ambil seluruh submission yang sudah dinilai dalam divisi tersebut
-      const allDivisionSubmissions =
-        await this.prisma.assignmentSubmission.findMany({
-          where: {
-            assignmentId,
-            score: { not: null },
-            user: {
-              profile: {
-                divisionId,
-              },
-            },
+      // Ambil seluruh user yang berada di divisi ini (baik langsung maupun via sub-divisi)
+      const approvedUsersInDivision = await this.prisma.user.findMany({
+        where: {
+          submissionVerifications: { some: { status: 'APPROVED' } },
+          role: 'USER',
+          isActive: true,
+          profile: {
+            OR: [{ divisionId }, { subDivision: { divisionId } }],
           },
-          include: {
-            user: {
-              include: {
-                profile: {
-                  include: { division: true, subDivision: true },
-                },
-              },
-            },
+        },
+        include: {
+          profile: { include: { division: true, subDivision: true } },
+          assignmentSubmissions: {
+            where: { assignmentId },
           },
-        });
+        },
+      });
 
-      const records = allDivisionSubmissions
-        .filter((s) => s.user?.profile)
-        .map((s) => ({
-          nim: s.user.profile!.nim,
-          fullName: s.user.profile!.fullName,
-          divisionName: (s.user.profile as any).division?.name || '-',
-          subDivisionName: (s.user.profile as any).subDivision?.name || '-',
-          score: Number(s.score),
-        }));
+      const records = approvedUsersInDivision
+        .filter((u) => u.profile)
+        .map((u) => {
+          const submission = u.assignmentSubmissions[0];
+          return {
+            nim: u.profile!.nim,
+            fullName: u.profile!.fullName,
+            divisionName: (u.profile as any).division?.name || '-',
+            subDivisionName: (u.profile as any).subDivision?.name || '-',
+            score: submission?.score ? Number(submission.score) : 0,
+          };
+        });
 
       if (records.length > 0) {
         await this.googleSheetsService.batchUpdateAssignmentScores(

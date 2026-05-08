@@ -55,27 +55,8 @@ export class AttendanceService {
         data: attendanceData,
       });
 
-      // Sinkronisasi Google Sheets: Bulk update semua user dengan ALFA
-      const spreadsheetId = process.env.ATTENDANCE_SPREADSHEET_ID;
-      if (spreadsheetId) {
-        const records = approvedUsers
-          .filter((u) => u.profile)
-          .map((u) => ({
-            nim: u.profile!.nim,
-            fullName: u.profile!.fullName,
-            divisionName: (u.profile as any).division?.name || '-',
-            subDivisionName: (u.profile as any).subDivision?.name || '-',
-            status: 'ALFA',
-          }));
-
-        if (records.length > 0) {
-          await this.googleSheetsService.batchUpdateAttendance(
-            spreadsheetId,
-            activity.name,
-            records,
-          );
-        }
-      }
+      // Sinkronisasi Google Sheets
+      await this.syncActivityToSheets(activity.id, activity.name);
     }
 
     return activity;
