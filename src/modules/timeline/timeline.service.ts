@@ -90,7 +90,10 @@ export class TimelineService {
     return result;
   }
 
-  private async ensureOrderIndexAvailable(orderIndex: number, excludeId?: string) {
+  private async ensureOrderIndexAvailable(
+    orderIndex: number,
+    excludeId?: string,
+  ) {
     const existing = await this.prisma.recruitmentTimeline.findFirst({
       where: {
         orderIndex,

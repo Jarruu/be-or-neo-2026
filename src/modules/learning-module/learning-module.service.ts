@@ -28,8 +28,7 @@ export class LearningModuleService {
     'application/vnd.openxmlformats-officedocument.presentationml.presentation':
       'pptx',
     'application/vnd.ms-excel': 'xls',
-    'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet':
-      'xlsx',
+    'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': 'xlsx',
     'text/plain': 'txt',
     'text/csv': 'csv',
     'application/zip': 'zip',
@@ -148,9 +147,12 @@ export class LearningModuleService {
 
     return {
       buffer,
-      contentType:
-        contentType || this.getContentTypeFromUrl(module.fileUrl),
-      filename: this.buildDownloadFilename(module.title, module.fileUrl, contentType),
+      contentType: contentType || this.getContentTypeFromUrl(module.fileUrl),
+      filename: this.buildDownloadFilename(
+        module.title,
+        module.fileUrl,
+        contentType,
+      ),
     };
   }
 
@@ -195,7 +197,9 @@ export class LearningModuleService {
   private async clearCache(subDivisionId?: string) {
     await this.cacheManager.del(this.CACHE_KEY_ALL);
     if (subDivisionId) {
-      await this.cacheManager.del(`${this.CACHE_KEY_SUBDIVISION}${subDivisionId}`);
+      await this.cacheManager.del(
+        `${this.CACHE_KEY_SUBDIVISION}${subDivisionId}`,
+      );
     }
   }
 
@@ -208,7 +212,10 @@ export class LearningModuleService {
     return user?.deactivatedAt ?? null;
   }
 
-  private getSubdivisionCacheKey(subDivisionId: string, frozenAt?: Date | null) {
+  private getSubdivisionCacheKey(
+    subDivisionId: string,
+    frozenAt?: Date | null,
+  ) {
     if (!frozenAt) {
       return `${this.CACHE_KEY_SUBDIVISION}${subDivisionId}`;
     }
@@ -234,7 +241,10 @@ export class LearningModuleService {
       where: { userId },
     });
 
-    if (!profile?.subDivisionId || profile.subDivisionId !== module.subDivisionId) {
+    if (
+      !profile?.subDivisionId ||
+      profile.subDivisionId !== module.subDivisionId
+    ) {
       throw new ForbiddenException(
         'You do not have access to this learning module.',
       );
@@ -275,7 +285,10 @@ export class LearningModuleService {
       return null;
     }
 
-    const normalizedContentType = contentType.split(';')[0].trim().toLowerCase();
+    const normalizedContentType = contentType
+      .split(';')[0]
+      .trim()
+      .toLowerCase();
     return this.contentTypeToExtension[normalizedContentType] ?? null;
   }
 

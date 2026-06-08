@@ -5,9 +5,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { PrismaService } from '../../common/services/prisma.service';
-import {
-  PaymentStatus,
-} from '../../../prisma/generated-client/client';
+import { PaymentStatus } from '../../../prisma/generated-client/client';
 import { CloudinaryStorageService } from '../../common/services/storage/cloudinary-storage.service';
 import { ReviewPaymentDto } from './dto/review-payment.dto';
 
@@ -112,7 +110,11 @@ export class PaymentService {
     return payment;
   }
 
-  async reviewPayment(adminId: string, paymentId: string, dto: ReviewPaymentDto) {
+  async reviewPayment(
+    adminId: string,
+    paymentId: string,
+    dto: ReviewPaymentDto,
+  ) {
     const payment = await this.findOne(paymentId);
 
     if (payment.status !== PaymentStatus.PENDING) {
@@ -127,7 +129,8 @@ export class PaymentService {
       where: { id: paymentId },
       data: {
         status: dto.status,
-        rejectionReason: dto.status === PaymentStatus.REJECTED ? dto.rejectionReason : null,
+        rejectionReason:
+          dto.status === PaymentStatus.REJECTED ? dto.rejectionReason : null,
         reviewedByAdminId: adminId,
         reviewedAt: new Date(),
       },

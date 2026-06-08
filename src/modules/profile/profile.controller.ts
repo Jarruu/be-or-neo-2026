@@ -13,11 +13,7 @@ import {
   UseInterceptors,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
-import {
-  ApiOperation,
-  ApiResponse,
-  ApiTags,
-} from '@nestjs/swagger';
+import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { GetUser } from '../../common/decorators/get-user.decorator';
 import { ProfileService } from './profile.service';
@@ -49,7 +45,8 @@ export class ProfileController {
   @Get('departments')
   @ApiOperation({
     summary: 'Get all departments',
-    description: 'Returns the department master list for profile selection forms.',
+    description:
+      'Returns the department master list for profile selection forms.',
   })
   @ApiResponse({ status: 200, description: 'Return all departments.' })
   @ApiResponse({ status: 401, description: 'Unauthorized' })

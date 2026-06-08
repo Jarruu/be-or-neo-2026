@@ -97,7 +97,9 @@ describe('AssignmentService', () => {
 
     it('should create an assignment with file upload', async () => {
       const file = { originalname: 'task.pdf' } as any;
-      mockStorage.uploadFile.mockResolvedValue('http://cloudinary.com/task.pdf');
+      mockStorage.uploadFile.mockResolvedValue(
+        'http://cloudinary.com/task.pdf',
+      );
       mockPrismaService.assignment.create.mockResolvedValue({
         id: 'asg-1',
         ...dto,
@@ -119,7 +121,9 @@ describe('AssignmentService', () => {
     const file = { originalname: 'task.zip' } as any;
 
     it('should throw Forbidden if exam not submitted', async () => {
-      mockPrismaService.user.findUnique.mockResolvedValue({ deactivatedAt: null });
+      mockPrismaService.user.findUnique.mockResolvedValue({
+        deactivatedAt: null,
+      });
       mockPrismaService.assignment.findUnique.mockResolvedValue({
         id: asgId,
         subDivisionId: 'sub-1',
@@ -134,7 +138,9 @@ describe('AssignmentService', () => {
     });
 
     it('should throw BadRequest when both file and text are missing', async () => {
-      mockPrismaService.user.findUnique.mockResolvedValue({ deactivatedAt: null });
+      mockPrismaService.user.findUnique.mockResolvedValue({
+        deactivatedAt: null,
+      });
       mockPrismaService.examAttempt.findFirst.mockResolvedValue({
         status: AttemptStatus.SUBMITTED,
       });
@@ -152,7 +158,9 @@ describe('AssignmentService', () => {
     });
 
     it('should create submission with file upload', async () => {
-      mockPrismaService.user.findUnique.mockResolvedValue({ deactivatedAt: null });
+      mockPrismaService.user.findUnique.mockResolvedValue({
+        deactivatedAt: null,
+      });
       mockPrismaService.examAttempt.findFirst.mockResolvedValue({
         status: AttemptStatus.SUBMITTED,
       });
@@ -175,7 +183,9 @@ describe('AssignmentService', () => {
     });
 
     it('should create submission with text-only content', async () => {
-      mockPrismaService.user.findUnique.mockResolvedValue({ deactivatedAt: null });
+      mockPrismaService.user.findUnique.mockResolvedValue({
+        deactivatedAt: null,
+      });
       mockPrismaService.examAttempt.findFirst.mockResolvedValue({
         status: AttemptStatus.SUBMITTED,
       });
@@ -192,7 +202,12 @@ describe('AssignmentService', () => {
         textContent: 'my answer',
       });
 
-      const result = await service.submit(asgId, userId, undefined, 'my answer');
+      const result = await service.submit(
+        asgId,
+        userId,
+        undefined,
+        'my answer',
+      );
       expect(result.id).toBe('subm-1');
       expect(storage.uploadFile).not.toHaveBeenCalled();
       expect(prisma.assignmentSubmission.create).toHaveBeenCalledWith({
@@ -205,7 +220,9 @@ describe('AssignmentService', () => {
     });
 
     it('should update existing submission', async () => {
-      mockPrismaService.user.findUnique.mockResolvedValue({ deactivatedAt: null });
+      mockPrismaService.user.findUnique.mockResolvedValue({
+        deactivatedAt: null,
+      });
       mockPrismaService.examAttempt.findFirst.mockResolvedValue({
         status: AttemptStatus.SUBMITTED,
       });
@@ -254,7 +271,9 @@ describe('AssignmentService', () => {
         contentType: 'application/pdf',
       });
 
-      mockPrismaService.user.findUnique.mockResolvedValue({ deactivatedAt: null });
+      mockPrismaService.user.findUnique.mockResolvedValue({
+        deactivatedAt: null,
+      });
       mockPrismaService.assignment.findUnique.mockResolvedValue({
         id: 'asg-1',
         title: 'Tugas Frontend Minggu 1',
@@ -265,7 +284,9 @@ describe('AssignmentService', () => {
 
       const result = await service.download('asg-1', 'admin-1', UserRole.ADMIN);
 
-      expect(mockStorage.downloadFile).toHaveBeenCalledWith('http://cloudinary.com/task.pdf');
+      expect(mockStorage.downloadFile).toHaveBeenCalledWith(
+        'http://cloudinary.com/task.pdf',
+      );
       expect(result.filename).toBe('Tugas-Frontend-Minggu-1.pdf');
       expect(result.contentType).toBe('application/pdf');
     });

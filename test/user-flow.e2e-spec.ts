@@ -4,7 +4,11 @@ import request from 'supertest';
 import { AppModule } from '../src/app.module';
 import { PrismaService } from '../src/common/services/prisma.service';
 import { CloudinaryStorageService } from '../src/common/services/storage/cloudinary-storage.service';
-import { UserRole, AttemptStatus, PaymentStatus } from '../prisma/generated-client/client';
+import {
+  UserRole,
+  AttemptStatus,
+  PaymentStatus,
+} from '../prisma/generated-client/client';
 import { JwtService } from '@nestjs/jwt';
 
 jest.setTimeout(60000);
@@ -23,12 +27,16 @@ describe('UserFlow: Exam & Assignment (e2e)', () => {
       imports: [AppModule],
     })
       .overrideProvider(CloudinaryStorageService)
-      .useValue({ uploadFile: jest.fn().mockResolvedValue('http://mock.url/file') })
+      .useValue({
+        uploadFile: jest.fn().mockResolvedValue('http://mock.url/file'),
+      })
       .compile();
 
     app = moduleFixture.createNestApplication();
     app.setGlobalPrefix('api');
-    app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true }));
+    app.useGlobalPipes(
+      new ValidationPipe({ whitelist: true, transform: true }),
+    );
     await app.init();
 
     prisma = app.get<PrismaService>(PrismaService);
@@ -42,15 +50,30 @@ describe('UserFlow: Exam & Assignment (e2e)', () => {
         role: UserRole.USER,
       },
     });
-    userToken = jwtService.sign({ sub: user.id, email: user.email, role: user.role });
+    userToken = jwtService.sign({
+      sub: user.id,
+      email: user.email,
+      role: user.role,
+    });
 
-    const dept = await prisma.department.create({ data: { name: `Flow Dept ${Date.now()}` } });
-    const div = await prisma.division.create({ data: { name: `Flow Div ${Date.now()}`, departmentId: dept.id } });
-    const subDiv = await prisma.subDivision.create({ data: { name: `Flow SubDiv ${Date.now()}`, divisionId: div.id } });
+    const dept = await prisma.department.create({
+      data: { name: `Flow Dept ${Date.now()}` },
+    });
+    const div = await prisma.division.create({
+      data: { name: `Flow Div ${Date.now()}`, departmentId: dept.id },
+    });
+    const subDiv = await prisma.subDivision.create({
+      data: { name: `Flow SubDiv ${Date.now()}`, divisionId: div.id },
+    });
     subDivisionId = subDiv.id;
 
     await prisma.profile.create({
-      data: { userId: user.id, fullName: 'Flow User', nim: `FLOW-${Date.now()}`, subDivisionId },
+      data: {
+        userId: user.id,
+        fullName: 'Flow User',
+        nim: `FLOW-${Date.now()}`,
+        subDivisionId,
+      },
     });
 
     // Add APPROVED payment to allow starting exam
@@ -69,9 +92,20 @@ describe('UserFlow: Exam & Assignment (e2e)', () => {
     });
     examId = exam.id;
 
-    const admin = await prisma.user.create({ data: { email: `admin-flow-${Date.now()}@ex.com`, passwordHash: 'h', role: UserRole.ADMIN } });
+    const admin = await prisma.user.create({
+      data: {
+        email: `admin-flow-${Date.now()}@ex.com`,
+        passwordHash: 'h',
+        role: UserRole.ADMIN,
+      },
+    });
     const asg = await prisma.assignment.create({
-        data: { title: 'Flow Assignment', subDivisionId, dueAt: new Date(), createdByAdminId: admin.id }
+      data: {
+        title: 'Flow Assignment',
+        subDivisionId,
+        dueAt: new Date(),
+        createdByAdminId: admin.id,
+      },
     });
     assignmentId = asg.id;
   });
@@ -86,7 +120,7 @@ describe('UserFlow: Exam & Assignment (e2e)', () => {
       .post(`/api/exams/user/${examId}/start`)
       .set('Authorization', `Bearer ${userToken}`)
       .expect(201);
-    
+
     expect(res.body.status).toBe('IN_PROGRESS');
   });
 
@@ -98,7 +132,9 @@ describe('UserFlow: Exam & Assignment (e2e)', () => {
       .send({ answers: [] })
       .expect(201);
 
-    const updated = await prisma.examAttempt.findUnique({ where: { id: attempt!.id } });
+    const updated = await prisma.examAttempt.findUnique({
+      where: { id: attempt!.id },
+    });
     expect(updated!.status).toBe(AttemptStatus.SUBMITTED);
   });
 
@@ -118,4 +154,3 @@ describe('UserFlow: Exam & Assignment (e2e)', () => {
       .expect(201);
   });
 });
-

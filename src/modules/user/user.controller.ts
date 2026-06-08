@@ -9,7 +9,17 @@ import {
   Patch,
   Body,
 } from '@nestjs/common';
-import { ApiOperation, ApiResponse, ApiTags, ApiBody } from '@nestjs/swagger';
+import {
+  ApiOperation,
+  ApiResponse,
+  ApiTags,
+  ApiBody,
+  ApiOkResponse,
+  ApiBadRequestResponse,
+  ApiUnauthorizedResponse,
+  ApiForbiddenResponse,
+  ApiNotFoundResponse,
+} from '@nestjs/swagger';
 import { UserService } from './user.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
@@ -22,6 +32,12 @@ import { UserResponseDto } from './dto/user-response.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
 import { ApiJwtAuth } from '../../common/swagger/decorators/api-jwt-auth.decorator';
 import { ApiUuidParam } from '../../common/swagger/decorators/api-uuid-param.decorator';
+import {
+  BadRequestErrorResponseDto,
+  UnauthorizedErrorResponseDto,
+  ForbiddenErrorResponseDto,
+  NotFoundErrorResponseDto,
+} from '../../common/swagger/dtos/error-response.dto';
 
 @ApiTags('Admin: User Management')
 @Controller('users')
@@ -167,23 +183,39 @@ export class UserController {
   @Patch(':id/reset-password')
   @ApiOperation({
     summary: 'Admin: Reset user password',
-    description: 'Resets the password of the specified user. Restricted to admin users.',
+    description:
+      'Forces a password reset for a specific user. This action is restricted to ADMIN users only. This bypasses the typical security flow where a user initiates their own password reset via an OTP or verification link.',
   })
-  @ApiUuidParam('id', 'The user UUID')
-  @ApiBody({ type: ResetPasswordDto })
-  @ApiResponse({
-    status: 200,
-    description: 'User password successfully reset',
+  @ApiUuidParam('id', 'The unique identifier (UUID) of the user')
+  @ApiBody({
+    type: ResetPasswordDto,
+    description: 'The new password payload for the user',
+  })
+  @ApiOkResponse({
+    description:
+      'User password has been successfully reset. Returns the updated user details.',
     type: UserResponseDto,
   })
-  @ApiResponse({ status: 400, description: 'Bad Request - invalid password input' })
-  @ApiResponse({ status: 401, description: 'Unauthorized' })
-  @ApiResponse({ status: 403, description: 'Forbidden - Admins only' })
-  @ApiResponse({ status: 404, description: 'User not found' })
-  async resetPassword(
-    @Param('id') id: string,
-    @Body() dto: ResetPasswordDto,
-  ) {
+  @ApiBadRequestResponse({
+    description:
+      'Bad Request - Validation failed (e.g. password is too short or payload format is invalid).',
+    type: BadRequestErrorResponseDto,
+  })
+  @ApiUnauthorizedResponse({
+    description: 'Unauthorized - The bearer token is missing or invalid.',
+    type: UnauthorizedErrorResponseDto,
+  })
+  @ApiForbiddenResponse({
+    description:
+      'Forbidden - The authenticated user does not have administrative privileges.',
+    type: ForbiddenErrorResponseDto,
+  })
+  @ApiNotFoundResponse({
+    description:
+      'Not Found - The specified user ID does not exist in the database.',
+    type: NotFoundErrorResponseDto,
+  })
+  async resetPassword(@Param('id') id: string, @Body() dto: ResetPasswordDto) {
     return this.userService.resetPassword(id, dto);
   }
 }

@@ -58,9 +58,9 @@ describe('PaymentService', () => {
 
     it('should throw BadRequest if user has no profile', async () => {
       mockPrismaService.user.findUnique.mockResolvedValue(null);
-      await expect(service.uploadProof(userId, amount, mockFile)).rejects.toThrow(
-        BadRequestException,
-      );
+      await expect(
+        service.uploadProof(userId, amount, mockFile),
+      ).rejects.toThrow(BadRequestException);
     });
 
     it('should throw BadRequest if verification is not approved', async () => {
@@ -69,9 +69,9 @@ describe('PaymentService', () => {
         profile: { fullName: 'Test' },
         submissionVerifications: [{ status: 'PENDING' }],
       });
-      await expect(service.uploadProof(userId, amount, mockFile)).rejects.toThrow(
-        BadRequestException,
-      );
+      await expect(
+        service.uploadProof(userId, amount, mockFile),
+      ).rejects.toThrow(BadRequestException);
     });
 
     it('should throw BadRequest if user already has an APPROVED payment', async () => {
@@ -83,9 +83,9 @@ describe('PaymentService', () => {
       mockPrismaService.payment.findFirst.mockResolvedValue({
         status: PaymentStatus.APPROVED,
       });
-      await expect(service.uploadProof(userId, amount, mockFile)).rejects.toThrow(
-        BadRequestException,
-      );
+      await expect(
+        service.uploadProof(userId, amount, mockFile),
+      ).rejects.toThrow(BadRequestException);
     });
 
     it('should successfully upload proof', async () => {
@@ -114,7 +114,9 @@ describe('PaymentService', () => {
         status: PaymentStatus.APPROVED,
       });
       await expect(
-        service.reviewPayment(adminId, paymentId, { status: PaymentStatus.APPROVED }),
+        service.reviewPayment(adminId, paymentId, {
+          status: PaymentStatus.APPROVED,
+        }),
       ).rejects.toThrow(BadRequestException);
     });
 
@@ -124,7 +126,9 @@ describe('PaymentService', () => {
         status: PaymentStatus.PENDING,
       });
       await expect(
-        service.reviewPayment(adminId, paymentId, { status: PaymentStatus.REJECTED }),
+        service.reviewPayment(adminId, paymentId, {
+          status: PaymentStatus.REJECTED,
+        }),
       ).rejects.toThrow(BadRequestException);
     });
 
@@ -133,7 +137,9 @@ describe('PaymentService', () => {
         id: paymentId,
         status: PaymentStatus.PENDING,
       });
-      mockPrismaService.payment.update.mockResolvedValue({ status: PaymentStatus.APPROVED });
+      mockPrismaService.payment.update.mockResolvedValue({
+        status: PaymentStatus.APPROVED,
+      });
 
       const result = await service.reviewPayment(adminId, paymentId, {
         status: PaymentStatus.APPROVED,

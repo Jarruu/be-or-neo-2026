@@ -67,19 +67,23 @@ describe('ProfileService', () => {
   describe('getProfile', () => {
     it('should throw NotFound if profile missing', async () => {
       mockCacheManager.get.mockResolvedValue(null);
-      mockPrismaService.user.findUnique.mockResolvedValue({ deactivatedAt: null });
+      mockPrismaService.user.findUnique.mockResolvedValue({
+        deactivatedAt: null,
+      });
       mockPrismaService.profile.findUnique.mockResolvedValue(null);
       await expect(service.getProfile('1')).rejects.toThrow(NotFoundException);
     });
 
     it('should return profile if found', async () => {
       mockCacheManager.get.mockResolvedValue(null);
-      mockPrismaService.user.findUnique.mockResolvedValue({ deactivatedAt: null });
+      mockPrismaService.user.findUnique.mockResolvedValue({
+        deactivatedAt: null,
+      });
       mockPrismaService.profile.findUnique.mockResolvedValue({
         id: '1',
         fullName: 'Test',
       });
-      const result = await service.getProfile('1') as any;
+      const result = (await service.getProfile('1')) as any;
       expect(result.fullName).toBe('Test');
     });
   });

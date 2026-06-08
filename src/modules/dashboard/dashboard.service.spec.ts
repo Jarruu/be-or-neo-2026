@@ -70,7 +70,9 @@ describe('DashboardService', () => {
   describe('getMyDashboard', () => {
     it('should calculate steps and current status correctly', async () => {
       mockCacheManager.get.mockResolvedValue(null);
-      mockPrismaService.user.findUnique.mockResolvedValue({ deactivatedAt: null });
+      mockPrismaService.user.findUnique.mockResolvedValue({
+        deactivatedAt: null,
+      });
       mockPrismaService.profile.findUnique.mockResolvedValue({
         fullName: 'Test User',
         nim: '1234',
@@ -92,7 +94,7 @@ describe('DashboardService', () => {
       mockPrismaService.recruitmentTimeline.findMany.mockResolvedValue([]);
       mockPrismaService.examAttempt.findFirst.mockResolvedValue(null);
 
-      const result = await service.getMyDashboard('user-1') as any;
+      const result = (await service.getMyDashboard('user-1')) as any;
 
       expect(result.progress.currentStep).toBe(3); // Profile Complete -> Step 2, Verif APPROVED -> Step 3
       expect(result.user.fullName).toBe('Test User');
@@ -105,7 +107,9 @@ describe('DashboardService', () => {
   describe('getAdminStats', () => {
     it('should return aggregated metrics for admin', async () => {
       mockCacheManager.get.mockResolvedValue(null);
-      mockPrismaService.user.findUnique.mockResolvedValue({ deactivatedAt: null });
+      mockPrismaService.user.findUnique.mockResolvedValue({
+        deactivatedAt: null,
+      });
       mockPrismaService.user.count.mockResolvedValue(100);
       mockPrismaService.submissionVerification.groupBy.mockResolvedValue([
         { status: 'APPROVED', _count: { _all: 50 } },
@@ -119,7 +123,7 @@ describe('DashboardService', () => {
         { name: 'Mobile', _count: { profiles: 12 } },
       ]);
 
-      const result = await service.getAdminStats() as any;
+      const result = (await service.getAdminStats()) as any;
 
       expect(result.overview.totalRegistrants).toBe(100);
       expect(result.verifications).toHaveLength(2);

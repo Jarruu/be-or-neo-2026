@@ -35,7 +35,9 @@ export class WhatsAppService {
 
     if (pendingMessages.length === 0) return;
 
-    this.logger.log(`Found ${pendingMessages.length} scheduled messages to send.`);
+    this.logger.log(
+      `Found ${pendingMessages.length} scheduled messages to send.`,
+    );
 
     for (const msg of pendingMessages) {
       try {

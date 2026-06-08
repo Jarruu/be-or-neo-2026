@@ -1,7 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { UserController } from './user.controller';
 import { UserService } from './user.service';
-import { UserRole } from '../../../prisma/generated-client/client';
 
 describe('UserController', () => {
   let controller: UserController;
@@ -12,6 +11,7 @@ describe('UserController', () => {
     findOne: jest.fn(),
     update: jest.fn(),
     remove: jest.fn(),
+    resetPassword: jest.fn(),
   };
 
   beforeEach(async () => {
@@ -85,6 +85,24 @@ describe('UserController', () => {
 
       expect(result).toEqual(mockUser);
       expect(service.update).toHaveBeenCalledWith(userId, dto, adminId);
+    });
+  });
+
+  describe('resetPassword', () => {
+    it('should call service.resetPassword and return its result', async () => {
+      const userId = 'user-1';
+      const dto = { password: 'newPassword123' };
+      const mockResult = {
+        id: userId,
+        email: 'user@example.com',
+        isActive: true,
+      };
+      mockUserService.resetPassword.mockResolvedValue(mockResult);
+
+      const result = await controller.resetPassword(userId, dto);
+
+      expect(result).toEqual(mockResult);
+      expect(service.resetPassword).toHaveBeenCalledWith(userId, dto);
     });
   });
 });

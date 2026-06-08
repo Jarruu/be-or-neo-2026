@@ -34,7 +34,10 @@ export class GoogleSheetsService {
     let normalizedName = subDivisionName.trim();
 
     // Pemetaan khusus (Case Sensitive di Database vs Keinginan User di Spreadsheet)
-    if (normalizedName.toLowerCase() === 'ui/ux' || normalizedName.toLowerCase() === 'ui ux') {
+    if (
+      normalizedName.toLowerCase() === 'ui/ux' ||
+      normalizedName.toLowerCase() === 'ui ux'
+    ) {
       normalizedName = 'UI/UX';
     } else if (normalizedName.toLowerCase() === 'design grafis') {
       normalizedName = '3D';
@@ -51,7 +54,7 @@ export class GoogleSheetsService {
   async ensureSheet(spreadsheetId: string, sheetName: string) {
     const sheets = google.sheets({ version: 'v4', auth: this.client });
     const spreadsheet = await sheets.spreadsheets.get({ spreadsheetId });
-    
+
     // Cari sheet secara case-insensitive agar lebih fleksibel
     const sheet = spreadsheet.data.sheets?.find(
       (s) => s.properties?.title?.toLowerCase() === sheetName.toLowerCase(),
@@ -385,7 +388,9 @@ export class GoogleSheetsService {
       );
 
       if (colIndex === -1) {
-        throw new Error(`Kolom "${activityName}" tidak ditemukan di spreadsheet.`);
+        throw new Error(
+          `Kolom "${activityName}" tidak ditemukan di spreadsheet.`,
+        );
       }
 
       const colLetter = this.columnToLetter(colIndex + 1);
@@ -403,7 +408,7 @@ export class GoogleSheetsService {
 
       for (const record of records) {
         const normalizedNim = record.nim.trim();
-        let rowIndex = existingNims.indexOf(normalizedNim);
+        const rowIndex = existingNims.indexOf(normalizedNim);
         let targetRow;
 
         if (rowIndex === -1) {

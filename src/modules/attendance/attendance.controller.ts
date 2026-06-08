@@ -35,9 +35,10 @@ export class AttendanceController {
 
   @Post('activities')
   @Roles(UserRole.ADMIN)
-  @ApiOperation({ 
+  @ApiOperation({
     summary: 'Admin: Create a new activity',
-    description: 'Creates a new activity and automatically generates ABSENT records for all currently ACTIVE and APPROVED users.'
+    description:
+      'Creates a new activity and automatically generates ABSENT records for all currently ACTIVE and APPROVED users.',
   })
   createActivity(@Body() dto: CreateActivityDto) {
     return this.attendanceService.createActivity(dto);
@@ -75,9 +76,10 @@ export class AttendanceController {
 
   @Post('scan')
   @Roles(UserRole.ADMIN)
-  @ApiOperation({ 
+  @ApiOperation({
     summary: 'Admin: Scan user QR Code for attendance',
-    description: 'Marks a user as PRESENT. The user must be ACTIVE and APPROVED to be recorded.'
+    description:
+      'Marks a user as PRESENT. The user must be ACTIVE and APPROVED to be recorded.',
   })
   scan(@Body() dto: ScanAttendanceDto) {
     return this.attendanceService.scanAttendance(dto);

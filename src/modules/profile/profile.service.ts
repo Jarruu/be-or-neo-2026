@@ -76,7 +76,8 @@ export class ProfileService {
     }
 
     const nextFakultas = dto.fakultas ?? currentProfile.fakultas;
-    const nextStudyProgramId = dto.studyProgramId ?? currentProfile.studyProgramId;
+    const nextStudyProgramId =
+      dto.studyProgramId ?? currentProfile.studyProgramId;
 
     if (nextStudyProgramId) {
       if (!nextFakultas) {

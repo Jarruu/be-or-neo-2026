@@ -15,11 +15,7 @@ import {
   MaxFileSizeValidator,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
-import {
-  ApiOperation,
-  ApiTags,
-  ApiResponse,
-} from '@nestjs/swagger';
+import { ApiOperation, ApiTags, ApiResponse } from '@nestjs/swagger';
 import { AssignmentService } from './assignment.service';
 import { CreateAssignmentDto } from './dto/create-assignment.dto';
 import { UpdateAssignmentDto } from './dto/update-assignment.dto';
@@ -119,12 +115,20 @@ export class AssignmentController {
       'image/png': {},
     },
   })
-  @ApiResponse({ status: 401, description: 'Unauthorized - Invalid or missing token' })
-  @ApiResponse({ status: 403, description: 'Forbidden - You do not have permission to access this submission' })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized - Invalid or missing token',
+  })
+  @ApiResponse({
+    status: 403,
+    description:
+      'Forbidden - You do not have permission to access this submission',
+  })
   @ApiResponse({ status: 404, description: 'Submission or file not found' })
   @ApiResponse({
     status: 502,
-    description: 'Bad Gateway - Could not retrieve file from Cloudinary storage',
+    description:
+      'Bad Gateway - Could not retrieve file from Cloudinary storage',
   })
   async previewSubmission(
     @Param('submissionId') submissionId: string,
@@ -133,7 +137,11 @@ export class AssignmentController {
     @Res({ passthrough: true }) res: Response,
   ): Promise<StreamableFile> {
     const { buffer, contentType } =
-      await this.assignmentService.downloadSubmission(submissionId, userId, role);
+      await this.assignmentService.downloadSubmission(
+        submissionId,
+        userId,
+        role,
+      );
 
     res.set({
       'Content-Type': contentType,
@@ -170,7 +178,11 @@ export class AssignmentController {
     @Res({ passthrough: true }) res: Response,
   ): Promise<StreamableFile> {
     const { buffer, contentType, filename } =
-      await this.assignmentService.downloadSubmission(submissionId, userId, role);
+      await this.assignmentService.downloadSubmission(
+        submissionId,
+        userId,
+        role,
+      );
 
     res.set({
       'Content-Type': contentType,
@@ -195,7 +207,10 @@ export class AssignmentController {
     description: 'File content streamed for inline preview.',
   })
   @ApiResponse({ status: 404, description: 'Assignment or file not found' })
-  @ApiResponse({ status: 502, description: 'Could not retrieve file from storage' })
+  @ApiResponse({
+    status: 502,
+    description: 'Could not retrieve file from storage',
+  })
   async preview(
     @Param('id') id: string,
     @GetUser('id') userId: string,
@@ -230,7 +245,10 @@ export class AssignmentController {
     description: 'File content streamed as attachment download.',
   })
   @ApiResponse({ status: 404, description: 'Assignment or file not found' })
-  @ApiResponse({ status: 502, description: 'Could not retrieve file from storage' })
+  @ApiResponse({
+    status: 502,
+    description: 'Could not retrieve file from storage',
+  })
   async download(
     @Param('id') id: string,
     @GetUser('id') userId: string,
@@ -408,5 +426,4 @@ export class AssignmentController {
   ) {
     return this.assignmentService.scoreSubmission(submissionId, dto);
   }
-
 }

@@ -5,7 +5,11 @@ import { INestApplication, ValidationPipe } from '@nestjs/common';
 import request from 'supertest';
 import { AppModule } from '../src/app.module';
 import { PrismaService } from '../src/common/services/prisma.service';
-import { VerificationStatus, PaymentStatus, UserRole } from '../prisma/generated-client/client';
+import {
+  VerificationStatus,
+  PaymentStatus,
+  UserRole,
+} from '../prisma/generated-client/client';
 
 jest.setTimeout(120000);
 
@@ -24,7 +28,9 @@ describe('Payment (e2e)', () => {
       imports: [AppModule],
     })
       .overrideProvider('CloudinaryStorageService')
-      .useValue({ uploadFile: jest.fn().mockResolvedValue('http://mock.url/proof.jpg') })
+      .useValue({
+        uploadFile: jest.fn().mockResolvedValue('http://mock.url/proof.jpg'),
+      })
       .compile();
 
     app = moduleFixture.createNestApplication();
@@ -64,7 +70,10 @@ describe('Payment (e2e)', () => {
         fullName: 'Admin Pay',
         nim: `NIM-ADM-${Date.now()}`,
       });
-    await prisma.user.update({ where: { email: adminEmail }, data: { role: UserRole.ADMIN } });
+    await prisma.user.update({
+      where: { email: adminEmail },
+      data: { role: UserRole.ADMIN },
+    });
     const adminLogin = await request(app.getHttpServer())
       .post('/api/auth/login')
       .send({ email: adminEmail, password });
@@ -74,7 +83,9 @@ describe('Payment (e2e)', () => {
   afterAll(async () => {
     await prisma.payment.deleteMany({ where: { userId } });
     await prisma.submissionVerification.deleteMany({ where: { userId } });
-    await prisma.user.deleteMany({ where: { email: { in: [userEmail, adminEmail] } } });
+    await prisma.user.deleteMany({
+      where: { email: { in: [userEmail, adminEmail] } },
+    });
     await prisma.$disconnect();
     await app.close();
   });
@@ -106,7 +117,7 @@ describe('Payment (e2e)', () => {
         .expect(201);
 
       expect(response.body.status).toBe(PaymentStatus.PENDING);
-      expect(response.body.amount).toBe("50000");
+      expect(response.body.amount).toBe('50000');
     });
 
     it('/api/payments/my-payment (GET) - Success', async () => {
@@ -114,7 +125,7 @@ describe('Payment (e2e)', () => {
         .get('/api/payments/my-payment')
         .set('Authorization', `Bearer ${userToken}`)
         .expect(200);
-      
+
       expect(response.body.status).toBe(PaymentStatus.PENDING);
     });
 

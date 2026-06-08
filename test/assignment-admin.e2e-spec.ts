@@ -30,7 +30,9 @@ describe('AssignmentAdmin (e2e)', () => {
 
     app = moduleFixture.createNestApplication();
     app.setGlobalPrefix('api');
-    app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true }));
+    app.useGlobalPipes(
+      new ValidationPipe({ whitelist: true, transform: true }),
+    );
     await app.init();
 
     prisma = app.get<PrismaService>(PrismaService);
@@ -45,7 +47,11 @@ describe('AssignmentAdmin (e2e)', () => {
       },
     });
     adminUserId = admin.id;
-    adminToken = jwtService.sign({ sub: admin.id, email: admin.email, role: admin.role });
+    adminToken = jwtService.sign({
+      sub: admin.id,
+      email: admin.email,
+      role: admin.role,
+    });
 
     const user = await prisma.user.create({
       data: {
@@ -54,11 +60,21 @@ describe('AssignmentAdmin (e2e)', () => {
         role: UserRole.USER,
       },
     });
-    userToken = jwtService.sign({ sub: user.id, email: user.email, role: user.role });
+    userToken = jwtService.sign({
+      sub: user.id,
+      email: user.email,
+      role: user.role,
+    });
 
-    const dept = await prisma.department.create({ data: { name: 'Test Dept' } });
-    const div = await prisma.division.create({ data: { name: 'Test Div', departmentId: dept.id } });
-    const subDiv = await prisma.subDivision.create({ data: { name: 'Test SubDiv', divisionId: div.id } });
+    const dept = await prisma.department.create({
+      data: { name: 'Test Dept' },
+    });
+    const div = await prisma.division.create({
+      data: { name: 'Test Div', departmentId: dept.id },
+    });
+    const subDiv = await prisma.subDivision.create({
+      data: { name: 'Test SubDiv', divisionId: div.id },
+    });
     subDivisionId = subDiv.id;
   });
 

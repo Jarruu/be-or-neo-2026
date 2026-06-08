@@ -29,7 +29,9 @@ describe('LearningModule (e2e)', () => {
 
     app = moduleFixture.createNestApplication();
     app.setGlobalPrefix('api');
-    app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true }));
+    app.useGlobalPipes(
+      new ValidationPipe({ whitelist: true, transform: true }),
+    );
     await app.init();
 
     prisma = app.get<PrismaService>(PrismaService);
@@ -43,7 +45,11 @@ describe('LearningModule (e2e)', () => {
         role: UserRole.ADMIN,
       },
     });
-    adminToken = jwtService.sign({ sub: admin.id, email: admin.email, role: admin.role });
+    adminToken = jwtService.sign({
+      sub: admin.id,
+      email: admin.email,
+      role: admin.role,
+    });
 
     const user = await prisma.user.create({
       data: {
@@ -52,21 +58,29 @@ describe('LearningModule (e2e)', () => {
         role: UserRole.USER,
       },
     });
-    userToken = jwtService.sign({ sub: user.id, email: user.email, role: user.role });
+    userToken = jwtService.sign({
+      sub: user.id,
+      email: user.email,
+      role: user.role,
+    });
 
     const dept = await prisma.department.create({ data: { name: 'LM Dept' } });
-    const div = await prisma.division.create({ data: { name: 'LM Div', departmentId: dept.id } });
-    const subDiv = await prisma.subDivision.create({ data: { name: 'LM SubDiv', divisionId: div.id } });
+    const div = await prisma.division.create({
+      data: { name: 'LM Div', departmentId: dept.id },
+    });
+    const subDiv = await prisma.subDivision.create({
+      data: { name: 'LM SubDiv', divisionId: div.id },
+    });
     subDivisionId = subDiv.id;
 
     // Associate user with subdivision
     await prisma.profile.create({
-        data: {
-            userId: user.id,
-            fullName: 'LM User',
-            nim: 'NIM-LM',
-            subDivisionId: subDivisionId,
-        }
+      data: {
+        userId: user.id,
+        fullName: 'LM User',
+        nim: 'NIM-LM',
+        subDivisionId: subDivisionId,
+      },
     });
   });
 

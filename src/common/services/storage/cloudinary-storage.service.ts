@@ -132,26 +132,30 @@ export class CloudinaryStorageService implements IStorageService {
 
       // Standard path: /cloud_name/resource_type/type/v1234/folder/public_id.ext
       // Example: /dnhwlfd6b/raw/upload/v1776951200/learning-modules/file.pdf
-      
-      const typeIndex = pathParts.findIndex(p => ['upload', 'private', 'authenticated'].includes(p));
+
+      const typeIndex = pathParts.findIndex((p) =>
+        ['upload', 'private', 'authenticated'].includes(p),
+      );
       const type = typeIndex !== -1 ? pathParts[typeIndex] : 'upload';
       const resourceType = typeIndex > 0 ? pathParts[typeIndex - 1] : 'raw';
 
       // Extract publicId after the version or type
-      const match = url.pathname.match(/\/(?:upload|private|authenticated)\/(?:v\d+\/)?(.+)$/);
+      const match = url.pathname.match(
+        /\/(?:upload|private|authenticated)\/(?:v\d+\/)?(.+)$/,
+      );
       if (!match) {
         throw new Error(`Cannot extract publicId from URL: ${fileUrl}`);
       }
 
       const fullPath = match[1]; // e.g., "folder/file.pdf"
       const lastDotIndex = fullPath.lastIndexOf('.');
-      
+
       if (lastDotIndex > 0) {
         return {
           publicId: fullPath.substring(0, lastDotIndex),
           format: fullPath.substring(lastDotIndex + 1),
           resourceType,
-          type
+          type,
         };
       }
 
@@ -162,7 +166,7 @@ export class CloudinaryStorageService implements IStorageService {
         publicId: fileUrl.split('/').pop()?.split('.')[0] || '',
         format: fileUrl.split('.').pop() || '',
         resourceType: 'raw',
-        type: 'upload'
+        type: 'upload',
       };
     }
   }
@@ -175,21 +179,25 @@ export class CloudinaryStorageService implements IStorageService {
   ): Promise<{ buffer: Buffer; contentType: string }> {
     try {
       const fetchResponse = await fetch(url);
-      
+
       if (!fetchResponse.ok) {
-        throw new Error(`Cloudinary responded with ${fetchResponse.status} ${fetchResponse.statusText}`);
+        throw new Error(
+          `Cloudinary responded with ${fetchResponse.status} ${fetchResponse.statusText}`,
+        );
       }
 
       const contentType =
         fetchResponse.headers.get('content-type') || 'application/octet-stream';
       const arrayBuffer = await fetchResponse.arrayBuffer();
-      
-      return { 
-        buffer: Buffer.from(arrayBuffer), 
-        contentType 
+
+      return {
+        buffer: Buffer.from(arrayBuffer),
+        contentType,
       };
     } catch (error) {
-      this.logger.error(`Fetch encountered an error: ${(error as Error).message}`);
+      this.logger.error(
+        `Fetch encountered an error: ${(error as Error).message}`,
+      );
       throw error;
     }
   }

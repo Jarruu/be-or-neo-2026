@@ -2,7 +2,10 @@ import { ApiProperty } from '@nestjs/swagger';
 import { IsDateString, IsNotEmpty, IsString } from 'class-validator';
 
 export class CreateActivityDto {
-  @ApiProperty({ description: 'Name of the activity', example: 'Opening Ceremony' })
+  @ApiProperty({
+    description: 'Name of the activity',
+    example: 'Opening Ceremony',
+  })
   @IsNotEmpty()
   @IsString()
   name: string;

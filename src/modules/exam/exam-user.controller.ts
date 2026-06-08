@@ -25,7 +25,7 @@ export class ExamUserController {
     return this.examService.findAvailableExams(userId);
   }
 
-  @Get(':id') 
+  @Get(':id')
   findOne(@Param('id') id: string) {
     return this.examService.findOne(id);
   }

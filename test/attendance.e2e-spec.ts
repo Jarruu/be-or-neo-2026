@@ -5,7 +5,11 @@ import { INestApplication, ValidationPipe } from '@nestjs/common';
 import request from 'supertest';
 import { AppModule } from '../src/app.module';
 import { PrismaService } from '../src/common/services/prisma.service';
-import { UserRole, VerificationStatus, AttendanceStatus } from '../prisma/generated-client/client';
+import {
+  UserRole,
+  VerificationStatus,
+  AttendanceStatus,
+} from '../prisma/generated-client/client';
 
 jest.setTimeout(60000);
 
@@ -66,7 +70,10 @@ describe('Attendance (e2e)', () => {
         fullName: 'Admin Att',
         nim: `NIM-ADM-${Date.now()}`,
       });
-    await prisma.user.update({ where: { email: adminEmail }, data: { role: UserRole.ADMIN } });
+    await prisma.user.update({
+      where: { email: adminEmail },
+      data: { role: UserRole.ADMIN },
+    });
     const adminLogin = await request(app.getHttpServer())
       .post('/api/auth/login')
       .send({ email: adminEmail, password });
@@ -77,7 +84,9 @@ describe('Attendance (e2e)', () => {
     await prisma.attendance.deleteMany({ where: { userId } });
     await prisma.activity.deleteMany({ where: { id: activityId } });
     await prisma.submissionVerification.deleteMany({ where: { userId } });
-    await prisma.user.deleteMany({ where: { email: { in: [userEmail, adminEmail] } } });
+    await prisma.user.deleteMany({
+      where: { email: { in: [userEmail, adminEmail] } },
+    });
     await prisma.$disconnect();
     await app.close();
   });
@@ -92,7 +101,7 @@ describe('Attendance (e2e)', () => {
           deadline: new Date(Date.now() + 3600000).toISOString(),
         })
         .expect(201);
-      
+
       activityId = response.body.id;
       expect(response.body.name).toBe('E2E Activity');
     });
@@ -106,7 +115,7 @@ describe('Attendance (e2e)', () => {
           activityId: activityId,
         })
         .expect(201);
-      
+
       expect(response.body.status).toBe(AttendanceStatus.PRESENT);
     });
 
@@ -115,7 +124,7 @@ describe('Attendance (e2e)', () => {
         .get('/api/attendances/me')
         .set('Authorization', `Bearer ${userToken}`)
         .expect(200);
-      
+
       expect(response.body.length).toBeGreaterThan(0);
       expect(response.body[0].status).toBe(AttendanceStatus.PRESENT);
     });
@@ -125,7 +134,7 @@ describe('Attendance (e2e)', () => {
         .get(`/api/attendances/activities/${activityId}`)
         .set('Authorization', `Bearer ${adminToken}`)
         .expect(200);
-      
+
       expect(response.body.attendances.length).toBeGreaterThan(0);
     });
   });

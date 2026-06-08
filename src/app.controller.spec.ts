@@ -16,7 +16,9 @@ describe('AppController', () => {
 
   describe('root', () => {
     it('should return "Hello World!"', () => {
-      expect(appController.getHello()).toBe('Hello, Welcome to Open Recruitment Neo Telemetri 2026 API');
+      expect(appController.getHello()).toBe(
+        'Hello, Welcome to Open Recruitment Neo Telemetri 2026 API',
+      );
     });
   });
 });

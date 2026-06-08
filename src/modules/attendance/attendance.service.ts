@@ -82,10 +82,17 @@ export class AttendanceService {
         });
 
         const formattedStats = {
-          present: stats.find((s) => s.status === AttendanceStatus.PRESENT)?._count || 0,
-          absent: stats.find((s) => s.status === AttendanceStatus.ABSENT)?._count || 0,
-          excused: stats.find((s) => s.status === AttendanceStatus.EXCUSED)?._count || 0,
-          sick: stats.find((s) => s.status === AttendanceStatus.SICK)?._count || 0,
+          present:
+            stats.find((s) => s.status === AttendanceStatus.PRESENT)?._count ||
+            0,
+          absent:
+            stats.find((s) => s.status === AttendanceStatus.ABSENT)?._count ||
+            0,
+          excused:
+            stats.find((s) => s.status === AttendanceStatus.EXCUSED)?._count ||
+            0,
+          sick:
+            stats.find((s) => s.status === AttendanceStatus.SICK)?._count || 0,
         };
 
         return {
@@ -141,7 +148,10 @@ export class AttendanceService {
     const spreadsheetId = process.env.ATTENDANCE_SPREADSHEET_ID;
     if (spreadsheetId) {
       try {
-        await this.googleSheetsService.deleteActivityColumn(spreadsheetId, activity.name);
+        await this.googleSheetsService.deleteActivityColumn(
+          spreadsheetId,
+          activity.name,
+        );
       } catch (error) {
         // Log error but proceed with DB deletion
       }
@@ -295,7 +305,10 @@ export class AttendanceService {
     });
 
     // Sinkronisasi ulang untuk memastikan spreadsheet akurat setelah penghapusan
-    await this.syncActivityToSheets(attendance.activity.id, attendance.activity.name);
+    await this.syncActivityToSheets(
+      attendance.activity.id,
+      attendance.activity.name,
+    );
 
     return result;
   }

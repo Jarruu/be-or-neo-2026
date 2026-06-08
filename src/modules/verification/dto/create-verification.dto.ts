@@ -5,7 +5,8 @@ export class CreateVerificationDto {
   @ApiPropertyOptional({
     type: 'string',
     format: 'binary',
-    description: 'Scan of KRS (Kartu Rencana Studi) as proof of active student status',
+    description:
+      'Scan of KRS (Kartu Rencana Studi) as proof of active student status',
   })
   @IsOptional()
   krsScan?: any;
@@ -29,7 +30,8 @@ export class CreateVerificationDto {
   @ApiPropertyOptional({
     type: 'string',
     format: 'binary',
-    description: 'Screenshot proof of sharing marketing material on Instagram Story',
+    description:
+      'Screenshot proof of sharing marketing material on Instagram Story',
   })
   @IsOptional()
   instagramMarketingProof?: any;

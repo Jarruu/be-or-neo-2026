@@ -73,10 +73,10 @@ export class MasterDataService {
 
   // --- Division ---
   async findAllDivisions(departmentId?: string) {
-    const cacheKey = departmentId 
-      ? `${this.CACHE_KEY_DIVISIONS}:${departmentId}` 
+    const cacheKey = departmentId
+      ? `${this.CACHE_KEY_DIVISIONS}:${departmentId}`
       : this.CACHE_KEY_DIVISIONS;
-    
+
     const cached = await this.cacheManager.get(cacheKey);
     if (cached) return cached;
 
@@ -127,10 +127,10 @@ export class MasterDataService {
 
   // --- SubDivision ---
   async findAllSubDivisions(divisionId?: string) {
-    const cacheKey = divisionId 
-      ? `${this.CACHE_KEY_SUBDIVISIONS}:${divisionId}` 
+    const cacheKey = divisionId
+      ? `${this.CACHE_KEY_SUBDIVISIONS}:${divisionId}`
       : this.CACHE_KEY_SUBDIVISIONS;
-    
+
     const cached = await this.cacheManager.get(cacheKey);
     if (cached) return cached;
 
@@ -234,7 +234,10 @@ export class MasterDataService {
         }
       }
     } catch (error) {
-      console.warn('Failed to clear all master data cache patterns:', error.message);
+      console.warn(
+        'Failed to clear all master data cache patterns:',
+        error.message,
+      );
     }
   }
 }

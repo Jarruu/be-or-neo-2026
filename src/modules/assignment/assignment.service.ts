@@ -26,8 +26,7 @@ export class AssignmentService {
     'application/vnd.openxmlformats-officedocument.presentationml.presentation':
       'pptx',
     'application/vnd.ms-excel': 'xls',
-    'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet':
-      'xlsx',
+    'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': 'xlsx',
     'text/plain': 'txt',
     'text/csv': 'csv',
     'application/zip': 'zip',
@@ -148,7 +147,12 @@ export class AssignmentService {
   async findOneForUser(id: string, userId: string, role: UserRole) {
     const assignment = await this.findOne(id);
     const frozenAt = await this.getUserFrozenAt(userId);
-    await this.assertUserCanAccessAssignment(assignment, userId, role, frozenAt);
+    await this.assertUserCanAccessAssignment(
+      assignment,
+      userId,
+      role,
+      frozenAt,
+    );
     return assignment;
   }
 
@@ -175,7 +179,11 @@ export class AssignmentService {
     };
   }
 
-  async update(id: string, dto: UpdateAssignmentDto, file?: Express.Multer.File) {
+  async update(
+    id: string,
+    dto: UpdateAssignmentDto,
+    file?: Express.Multer.File,
+  ) {
     const assignment = await this.findOne(id);
 
     let fileUrl = assignment.fileUrl;
@@ -365,9 +373,12 @@ export class AssignmentService {
             fullName: u.profile!.fullName,
             divisionName: (u.profile as any).division?.name || '-',
             subDivisionName: (u.profile as any).subDivision?.name || '-',
-            score: (submission && submission.score !== null && submission.score !== undefined) 
-              ? Number(submission.score) 
-              : 0,
+            score:
+              submission &&
+              submission.score !== null &&
+              submission.score !== undefined
+                ? Number(submission.score)
+                : 0,
           };
         });
 
@@ -384,7 +395,11 @@ export class AssignmentService {
     }
   }
 
-  async downloadSubmission(submissionId: string, userId: string, role: UserRole) {
+  async downloadSubmission(
+    submissionId: string,
+    userId: string,
+    role: UserRole,
+  ) {
     const submission = await this.prisma.assignmentSubmission.findUnique({
       where: { id: submissionId },
       include: {
@@ -426,7 +441,8 @@ export class AssignmentService {
 
     return {
       buffer,
-      contentType: contentType || this.getContentTypeFromUrl(submission.fileUrl),
+      contentType:
+        contentType || this.getContentTypeFromUrl(submission.fileUrl),
       filename,
     };
   }
@@ -449,7 +465,10 @@ export class AssignmentService {
       where: { userId },
     });
 
-    if (!profile?.subDivisionId || profile.subDivisionId !== assignment.subDivisionId) {
+    if (
+      !profile?.subDivisionId ||
+      profile.subDivisionId !== assignment.subDivisionId
+    ) {
       throw new ForbiddenException(
         'You do not have access to this assignment.',
       );
@@ -499,7 +518,10 @@ export class AssignmentService {
       return null;
     }
 
-    const normalizedContentType = contentType.split(';')[0].trim().toLowerCase();
+    const normalizedContentType = contentType
+      .split(';')[0]
+      .trim()
+      .toLowerCase();
     return this.contentTypeToExtension[normalizedContentType] ?? null;
   }
 
@@ -533,6 +555,3 @@ export class AssignmentService {
     return matchingEntry?.[0] ?? 'application/octet-stream';
   }
 }
-
-
-

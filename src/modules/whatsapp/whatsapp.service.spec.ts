@@ -47,7 +47,9 @@ describe('WhatsAppService', () => {
     it('should create a scheduled message in database', async () => {
       const mockMsg = 'Test message';
       const mockDate = new Date();
-      (prisma.scheduledWhatsApp.create as jest.Mock).mockResolvedValue({ id: '1' });
+      (prisma.scheduledWhatsApp.create as jest.Mock).mockResolvedValue({
+        id: '1',
+      });
 
       await service.scheduleMessage(mockMsg, mockDate);
 
@@ -101,7 +103,11 @@ describe('WhatsAppService', () => {
   describe('sendBulkToAllUsers', () => {
     it('should send bulk messages to only active users with whatsapp numbers', async () => {
       const mockProfiles = [
-        { whatsappNumber: '6281234567890', nickName: 'Budi', fullName: 'Budi Santoso' },
+        {
+          whatsappNumber: '6281234567890',
+          nickName: 'Budi',
+          fullName: 'Budi Santoso',
+        },
         { whatsappNumber: '6289876543210', nickName: null, fullName: 'Ani' },
       ];
       (prisma.profile.findMany as jest.Mock).mockResolvedValue(mockProfiles);
@@ -134,13 +140,17 @@ describe('WhatsAppService', () => {
     });
 
     it('should exclude deactivated users from bulk messages', async () => {
-      // In this scenario, we mock the database behavior where the query 
+      // In this scenario, we mock the database behavior where the query
       // with { user: { isActive: true } } only returns active users.
       const activeProfiles = [
-        { whatsappNumber: '6281111111111', nickName: 'ActiveUser', fullName: 'Active User' },
+        {
+          whatsappNumber: '6281111111111',
+          nickName: 'ActiveUser',
+          fullName: 'Active User',
+        },
       ];
-      
-      // We simulate that a deactivated user exists but is NOT returned by findMany 
+
+      // We simulate that a deactivated user exists but is NOT returned by findMany
       // because of the filter we added.
       (prisma.profile.findMany as jest.Mock).mockResolvedValue(activeProfiles);
       (waway.sendBulk as jest.Mock).mockResolvedValue({ status: 'success' });
@@ -148,18 +158,18 @@ describe('WhatsAppService', () => {
       const result = await service.sendBulkToAllUsers('Halo');
 
       // Verify the query included the isActive: true filter
-      expect(prisma.profile.findMany).toHaveBeenCalledWith(expect.objectContaining({
-        where: expect.objectContaining({
-          AND: expect.arrayContaining([
-            { user: { isActive: true } }
-          ])
-        })
-      }));
+      expect(prisma.profile.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({
+            AND: expect.arrayContaining([{ user: { isActive: true } }]),
+          }),
+        }),
+      );
 
       // Verify only the active user was sent to Waway
       expect(waway.sendBulk).toHaveBeenCalledWith(
         [{ phone: '6281111111111', name: 'ActiveUser' }],
-        'Halo'
+        'Halo',
       );
       expect(result.count).toBe(1);
     });

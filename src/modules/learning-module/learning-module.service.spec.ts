@@ -4,7 +4,10 @@ import { PrismaService } from '../../common/services/prisma.service';
 import { CloudinaryStorageService } from '../../common/services/storage/cloudinary-storage.service';
 import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import { ForbiddenException, NotFoundException } from '@nestjs/common';
-import { AttemptStatus, UserRole } from '../../../prisma/generated-client/client';
+import {
+  AttemptStatus,
+  UserRole,
+} from '../../../prisma/generated-client/client';
 
 describe('LearningModuleService', () => {
   let service: LearningModuleService;
@@ -75,8 +78,14 @@ describe('LearningModuleService', () => {
     const file = { originalname: 'react.pdf' } as any;
 
     it('should upload file and create module', async () => {
-      mockStorage.uploadFile.mockResolvedValue('http://cloudinary.com/react.pdf');
-      mockPrismaService.learningModule.create.mockResolvedValue({ id: 'mod-1', ...dto, fileUrl: 'url' });
+      mockStorage.uploadFile.mockResolvedValue(
+        'http://cloudinary.com/react.pdf',
+      );
+      mockPrismaService.learningModule.create.mockResolvedValue({
+        id: 'mod-1',
+        ...dto,
+        fileUrl: 'url',
+      });
 
       const result = await service.create(dto, adminId, file);
 
@@ -91,18 +100,30 @@ describe('LearningModuleService', () => {
     const userId = 'user-1';
 
     it('should throw Forbidden if exam not submitted', async () => {
-      mockPrismaService.profile.findUnique.mockResolvedValue({ subDivisionId: 'sub-1' });
+      mockPrismaService.profile.findUnique.mockResolvedValue({
+        subDivisionId: 'sub-1',
+      });
       mockPrismaService.examAttempt.findFirst.mockResolvedValue(null);
 
-      await expect(service.findByUserId(userId)).rejects.toThrow(ForbiddenException);
+      await expect(service.findByUserId(userId)).rejects.toThrow(
+        ForbiddenException,
+      );
     });
 
     it('should return modules if exam is submitted', async () => {
-      mockPrismaService.user.findUnique.mockResolvedValue({ deactivatedAt: null });
-      mockPrismaService.profile.findUnique.mockResolvedValue({ subDivisionId: 'sub-1' });
-      mockPrismaService.examAttempt.findFirst.mockResolvedValue({ status: AttemptStatus.SUBMITTED });
+      mockPrismaService.user.findUnique.mockResolvedValue({
+        deactivatedAt: null,
+      });
+      mockPrismaService.profile.findUnique.mockResolvedValue({
+        subDivisionId: 'sub-1',
+      });
+      mockPrismaService.examAttempt.findFirst.mockResolvedValue({
+        status: AttemptStatus.SUBMITTED,
+      });
       mockCacheManager.get.mockResolvedValue(null);
-      mockPrismaService.learningModule.findMany.mockResolvedValue([{ title: 'Module 1' }]);
+      mockPrismaService.learningModule.findMany.mockResolvedValue([
+        { title: 'Module 1' },
+      ]);
 
       const result = await service.findByUserId(userId);
       expect(result).toHaveLength(1);
@@ -117,19 +138,27 @@ describe('LearningModuleService', () => {
         contentType: 'application/pdf',
       });
 
-      mockPrismaService.user.findUnique.mockResolvedValue({ deactivatedAt: null });
+      mockPrismaService.user.findUnique.mockResolvedValue({
+        deactivatedAt: null,
+      });
       mockPrismaService.learningModule.findUnique.mockResolvedValue({
         id: 'mod-1',
         title: 'Advanced Git',
         fileUrl: 'http://cloudinary.com/git.pdf',
         subDivisionId: 'sub-1',
       });
-      mockPrismaService.profile.findUnique.mockResolvedValue({ subDivisionId: 'sub-1' });
-      mockPrismaService.examAttempt.findFirst.mockResolvedValue({ status: AttemptStatus.SUBMITTED });
+      mockPrismaService.profile.findUnique.mockResolvedValue({
+        subDivisionId: 'sub-1',
+      });
+      mockPrismaService.examAttempt.findFirst.mockResolvedValue({
+        status: AttemptStatus.SUBMITTED,
+      });
 
       const result = await service.download('mod-1', 'user-1', UserRole.USER);
 
-      expect(mockStorage.downloadFile).toHaveBeenCalledWith('http://cloudinary.com/git.pdf');
+      expect(mockStorage.downloadFile).toHaveBeenCalledWith(
+        'http://cloudinary.com/git.pdf',
+      );
       expect(result.filename).toBe('Advanced-Git.pdf');
       expect(result.contentType).toBe('application/pdf');
     });
@@ -137,17 +166,25 @@ describe('LearningModuleService', () => {
     it('should throw error if storage download fails', async () => {
       mockStorage.downloadFile.mockRejectedValue(new Error('Storage error'));
 
-      mockPrismaService.user.findUnique.mockResolvedValue({ deactivatedAt: null });
+      mockPrismaService.user.findUnique.mockResolvedValue({
+        deactivatedAt: null,
+      });
       mockPrismaService.learningModule.findUnique.mockResolvedValue({
         id: 'mod-1',
         title: 'Title',
         fileUrl: 'url',
         subDivisionId: 'sub-1',
       });
-      mockPrismaService.profile.findUnique.mockResolvedValue({ subDivisionId: 'sub-1' });
-      mockPrismaService.examAttempt.findFirst.mockResolvedValue({ status: AttemptStatus.SUBMITTED });
+      mockPrismaService.profile.findUnique.mockResolvedValue({
+        subDivisionId: 'sub-1',
+      });
+      mockPrismaService.examAttempt.findFirst.mockResolvedValue({
+        status: AttemptStatus.SUBMITTED,
+      });
 
-      await expect(service.download('mod-1', 'user-1', UserRole.USER)).rejects.toThrow();
+      await expect(
+        service.download('mod-1', 'user-1', UserRole.USER),
+      ).rejects.toThrow();
     });
   });
 });

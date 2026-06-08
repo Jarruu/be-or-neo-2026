@@ -1,8 +1,4 @@
-import {
-  Injectable,
-  Inject,
-  NotFoundException,
-} from '@nestjs/common';
+import { Injectable, Inject, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../common/services/prisma.service';
 import { IStorageService } from '../../common/services/storage/storage.interface';
 import { CreateMentorDto } from './dto/create-mentor.dto';
@@ -50,11 +46,7 @@ export class MentorService {
     return mentor;
   }
 
-  async update(
-    id: string,
-    dto: UpdateMentorDto,
-    file?: Express.Multer.File,
-  ) {
+  async update(id: string, dto: UpdateMentorDto, file?: Express.Multer.File) {
     const mentor = await this.findOne(id);
     let photoUrl = mentor.photoUrl;
 

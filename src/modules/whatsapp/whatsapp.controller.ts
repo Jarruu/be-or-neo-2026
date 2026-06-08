@@ -47,7 +47,8 @@ export class WhatsAppController {
   })
   @ApiResponse({
     status: 500,
-    description: 'Internal Server Error - Failed to communicate with Waway API.',
+    description:
+      'Internal Server Error - Failed to communicate with Waway API.',
   })
   async sendBulk(@Body() dto: SendBulkWhatsAppDto) {
     return this.whatsappService.sendBulkToAllUsers(dto.message);

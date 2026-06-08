@@ -62,8 +62,14 @@ describe('AttendanceService', () => {
   describe('createActivity', () => {
     it('should create activity and initial attendance records', async () => {
       const dto = { name: 'New Activity', deadline: new Date().toISOString() };
-      mockPrismaService.activity.create.mockResolvedValue({ id: 'act-1', ...dto });
-      mockPrismaService.user.findMany.mockResolvedValue([{ id: 'u1' }, { id: 'u2' }]);
+      mockPrismaService.activity.create.mockResolvedValue({
+        id: 'act-1',
+        ...dto,
+      });
+      mockPrismaService.user.findMany.mockResolvedValue([
+        { id: 'u1' },
+        { id: 'u2' },
+      ]);
 
       const result = await service.createActivity(dto);
       expect(result.id).toBe('act-1');
@@ -79,7 +85,9 @@ describe('AttendanceService', () => {
 
     it('should throw NotFound if activity does not exist', async () => {
       mockPrismaService.activity.findUnique.mockResolvedValue(null);
-      await expect(service.scanAttendance(dto)).rejects.toThrow(NotFoundException);
+      await expect(service.scanAttendance(dto)).rejects.toThrow(
+        NotFoundException,
+      );
     });
 
     it('should throw BadRequest if deadline passed', async () => {
@@ -87,7 +95,9 @@ describe('AttendanceService', () => {
         ...mockActivity,
         deadline: new Date(Date.now() - 3600000), // 1 hour ago
       });
-      await expect(service.scanAttendance(dto)).rejects.toThrow(BadRequestException);
+      await expect(service.scanAttendance(dto)).rejects.toThrow(
+        BadRequestException,
+      );
     });
 
     it('should update attendance to PRESENT if record exists', async () => {
@@ -98,7 +108,9 @@ describe('AttendanceService', () => {
         activityId,
         status: AttendanceStatus.ABSENT,
       });
-      mockPrismaService.attendance.update.mockResolvedValue({ status: AttendanceStatus.PRESENT });
+      mockPrismaService.attendance.update.mockResolvedValue({
+        status: AttendanceStatus.PRESENT,
+      });
 
       const result = await service.scanAttendance(dto);
       expect(result.status).toBe(AttendanceStatus.PRESENT);
@@ -109,7 +121,9 @@ describe('AttendanceService', () => {
       mockPrismaService.activity.findUnique.mockResolvedValue(mockActivity);
       mockPrismaService.attendance.findUnique.mockResolvedValue(null);
       mockPrismaService.user.findFirst.mockResolvedValue({ id: userId });
-      mockPrismaService.attendance.create.mockResolvedValue({ status: AttendanceStatus.PRESENT });
+      mockPrismaService.attendance.create.mockResolvedValue({
+        status: AttendanceStatus.PRESENT,
+      });
 
       const result = await service.scanAttendance(dto);
       expect(result.status).toBe(AttendanceStatus.PRESENT);
@@ -119,8 +133,12 @@ describe('AttendanceService', () => {
 
   describe('updateAttendance', () => {
     it('should manually update status', async () => {
-      mockPrismaService.attendance.findUnique.mockResolvedValue({ id: 'att-1' });
-      mockPrismaService.attendance.update.mockResolvedValue({ status: AttendanceStatus.EXCUSED });
+      mockPrismaService.attendance.findUnique.mockResolvedValue({
+        id: 'att-1',
+      });
+      mockPrismaService.attendance.update.mockResolvedValue({
+        status: AttendanceStatus.EXCUSED,
+      });
 
       const result = await service.updateAttendance('att-1', {
         status: AttendanceStatus.EXCUSED,

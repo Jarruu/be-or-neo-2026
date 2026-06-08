@@ -13,11 +13,7 @@ import {
   HttpStatus,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
-import {
-  ApiOperation,
-  ApiResponse,
-  ApiTags,
-} from '@nestjs/swagger';
+import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { MentorService } from './mentor.service';
 import { CreateMentorDto } from './dto/create-mentor.dto';
 import { UpdateMentorDto } from './dto/update-mentor.dto';
@@ -45,7 +41,10 @@ export class MentorController {
   })
   @ApiMultipartFormData({ type: CreateMentorDto })
   @ApiResponse({ status: 201, description: 'Mentor successfully created.' })
-  @ApiResponse({ status: 400, description: 'Bad Request - invalid mentor payload' })
+  @ApiResponse({
+    status: 400,
+    description: 'Bad Request - invalid mentor payload',
+  })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   @ApiResponse({ status: 403, description: 'Forbidden - Admins only' })
   @UseInterceptors(FileInterceptor('photo'))
@@ -91,7 +90,10 @@ export class MentorController {
   @ApiMultipartFormData({ type: UpdateMentorDto })
   @ApiUuidParam('id', 'The mentor UUID')
   @ApiResponse({ status: 200, description: 'Mentor successfully updated.' })
-  @ApiResponse({ status: 400, description: 'Bad Request - invalid mentor payload' })
+  @ApiResponse({
+    status: 400,
+    description: 'Bad Request - invalid mentor payload',
+  })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   @ApiResponse({ status: 403, description: 'Forbidden - Admins only' })
   @ApiResponse({ status: 404, description: 'Mentor not found' })
@@ -108,7 +110,8 @@ export class MentorController {
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiOperation({
     summary: 'Admin: Delete a mentor',
-    description: 'Deletes a mentor record. User profiles linked to this mentor will follow database relation rules.',
+    description:
+      'Deletes a mentor record. User profiles linked to this mentor will follow database relation rules.',
   })
   @ApiUuidParam('id', 'The mentor UUID')
   @ApiResponse({ status: 204, description: 'Mentor successfully deleted.' })

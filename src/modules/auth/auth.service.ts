@@ -94,13 +94,13 @@ export class AuthService {
   }
 
   async generateFileToken(user: { id: string; email: string; role: string }) {
-    const payload = { 
-      sub: user.id, 
-      email: user.email, 
+    const payload = {
+      sub: user.id,
+      email: user.email,
       role: user.role,
-      purpose: 'file_access' // Menandai bahwa ini token khusus file
+      purpose: 'file_access', // Menandai bahwa ini token khusus file
     };
-    
+
     return {
       file_token: await this.jwtService.signAsync(payload, {
         expiresIn: '60s', // Hanya berlaku 1 menit

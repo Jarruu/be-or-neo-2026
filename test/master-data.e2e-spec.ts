@@ -19,7 +19,9 @@ describe('MasterData (e2e)', () => {
 
     app = moduleFixture.createNestApplication();
     app.setGlobalPrefix('api');
-    app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true }));
+    app.useGlobalPipes(
+      new ValidationPipe({ whitelist: true, transform: true }),
+    );
     await app.init();
 
     prisma = app.get<PrismaService>(PrismaService);
@@ -32,7 +34,11 @@ describe('MasterData (e2e)', () => {
         role: UserRole.ADMIN,
       },
     });
-    adminToken = jwtService.sign({ sub: admin.id, email: admin.email, role: admin.role });
+    adminToken = jwtService.sign({
+      sub: admin.id,
+      email: admin.email,
+      role: admin.role,
+    });
   });
 
   afterAll(async () => {
@@ -51,7 +57,7 @@ describe('MasterData (e2e)', () => {
         .set('Authorization', `Bearer ${adminToken}`)
         .send({ name: 'Teknik Komputer' })
         .expect(201);
-      
+
       deptId = res.body.id;
       expect(res.body.name).toBe('Teknik Komputer');
     });
@@ -61,7 +67,7 @@ describe('MasterData (e2e)', () => {
         .get('/api/profile/departments')
         .set('Authorization', `Bearer ${adminToken}`)
         .expect(200);
-      
+
       expect(Array.isArray(res.body)).toBe(true);
       expect(res.body.length).toBeGreaterThan(0);
     });
@@ -82,7 +88,7 @@ describe('MasterData (e2e)', () => {
         .set('Authorization', `Bearer ${adminToken}`)
         .send({ name: 'Software', departmentId: deptId })
         .expect(201);
-      
+
       divId = res.body.id;
       expect(res.body.name).toBe('Software');
     });
@@ -102,7 +108,7 @@ describe('MasterData (e2e)', () => {
         .set('Authorization', `Bearer ${adminToken}`)
         .send({ name: 'Web Development', divisionId: divId })
         .expect(201);
-      
+
       expect(res.body.name).toBe('Web Development');
     });
   });
@@ -140,7 +146,9 @@ describe('MasterData (e2e)', () => {
 
       expect(Array.isArray(res.body)).toBe(true);
       expect(
-        res.body.every((item: any) => item.fakultas === Fakultas.TEKNOLOGI_INFORMASI),
+        res.body.every(
+          (item: any) => item.fakultas === Fakultas.TEKNOLOGI_INFORMASI,
+        ),
       ).toBe(true);
     });
   });

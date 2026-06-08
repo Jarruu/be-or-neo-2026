@@ -13,11 +13,7 @@ import {
   StreamableFile,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
-import {
-  ApiOperation,
-  ApiTags,
-  ApiResponse,
-} from '@nestjs/swagger';
+import { ApiOperation, ApiTags, ApiResponse } from '@nestjs/swagger';
 import { LearningModuleService } from './learning-module.service';
 import { CreateLearningModuleDto } from './dto/create-learning-module.dto';
 import { UpdateLearningModuleDto } from './dto/update-learning-module.dto';
@@ -107,7 +103,10 @@ export class LearningModuleController {
     description: 'File content streamed for inline preview.',
   })
   @ApiResponse({ status: 404, description: 'Module or file not found' })
-  @ApiResponse({ status: 502, description: 'Could not retrieve file from storage' })
+  @ApiResponse({
+    status: 502,
+    description: 'Could not retrieve file from storage',
+  })
   async preview(
     @Param('id') id: string,
     @GetUser('id') userId: string,
@@ -143,7 +142,10 @@ export class LearningModuleController {
     description: 'File content streamed as attachment download.',
   })
   @ApiResponse({ status: 404, description: 'Module or file not found' })
-  @ApiResponse({ status: 502, description: 'Could not retrieve file from storage' })
+  @ApiResponse({
+    status: 502,
+    description: 'Could not retrieve file from storage',
+  })
   async download(
     @Param('id') id: string,
     @GetUser('id') userId: string,

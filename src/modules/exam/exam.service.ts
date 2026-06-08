@@ -300,7 +300,7 @@ export class ExamService {
     });
     return !!attempt;
   }
-  
+
   async getAllAttempts() {
     return this.prisma.examAttempt.findMany({
       where: {

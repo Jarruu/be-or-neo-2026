@@ -262,7 +262,9 @@ describe('UserService', () => {
           submissionVerifications: true,
         },
       });
-      expect(mockCacheManager.del).toHaveBeenCalledWith(`profile:user:${userId}`);
+      expect(mockCacheManager.del).toHaveBeenCalledWith(
+        `profile:user:${userId}`,
+      );
     });
 
     it('should throw NotFoundException if user does not exist', async () => {
