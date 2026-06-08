@@ -3,13 +3,15 @@ import {
   NotFoundException,
   BadRequestException,
   ConflictException,
+  Inject,
 } from '@nestjs/common';
 import { PrismaService } from '../../common/services/prisma.service';
 import { Fakultas, UserRole } from '../../../prisma/generated-client/client';
 import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import { Cache } from 'cache-manager';
-import { Inject } from '@nestjs/common';
 import { UpdateUserDto } from './dto/update-user.dto';
+import { ResetPasswordDto } from './dto/reset-password.dto';
+import * as bcrypt from 'bcrypt';
 
 @Injectable()
 export class UserService {
@@ -223,6 +225,34 @@ export class UserService {
         deactivatedAt: user.isActive ? new Date() : null,
       },
     });
+  }
+
+  async resetPassword(id: string, dto: ResetPasswordDto) {
+    const user = await this.prisma.user.findUnique({
+      where: { id },
+    });
+
+    if (!user) {
+      throw new NotFoundException(`User with ID ${id} not found`);
+    }
+
+    const passwordHash = await bcrypt.hash(dto.password, 10);
+
+    const updatedUser = await this.prisma.user.update({
+      where: { id },
+      data: { passwordHash },
+      include: {
+        profile: true,
+        payments: true,
+        submissionVerifications: true,
+      },
+    });
+
+    await this.cacheManager.del(`profile:user:${id}`);
+
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { passwordHash: _, ...result } = updatedUser;
+    return result;
   }
 
   private hasProfileUpdates(dto: UpdateUserDto) {

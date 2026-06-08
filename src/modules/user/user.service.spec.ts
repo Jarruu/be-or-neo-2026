@@ -224,4 +224,53 @@ describe('UserService', () => {
       ).rejects.toThrow(BadRequestException);
     });
   });
+
+  describe('resetPassword', () => {
+    const userId = 'user-1';
+    const resetDto = { password: 'newPassword123' };
+
+    it('should reset user password successfully', async () => {
+      const mockUser = {
+        id: userId,
+        email: 'user@example.com',
+        passwordHash: 'oldHash',
+      };
+
+      const updatedUser = {
+        id: userId,
+        email: 'user@example.com',
+        passwordHash: 'newHash',
+      };
+
+      mockPrismaService.user.findUnique.mockResolvedValue(mockUser);
+      mockPrismaService.user.update.mockResolvedValue(updatedUser);
+
+      const result = await service.resetPassword(userId, resetDto);
+
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      const { passwordHash: _, ...expectedResult } = updatedUser;
+      expect(result).toEqual(expectedResult);
+      expect(mockPrismaService.user.findUnique).toHaveBeenCalledWith({
+        where: { id: userId },
+      });
+      expect(mockPrismaService.user.update).toHaveBeenCalledWith({
+        where: { id: userId },
+        data: { passwordHash: expect.any(String) },
+        include: {
+          profile: true,
+          payments: true,
+          submissionVerifications: true,
+        },
+      });
+      expect(mockCacheManager.del).toHaveBeenCalledWith(`profile:user:${userId}`);
+    });
+
+    it('should throw NotFoundException if user does not exist', async () => {
+      mockPrismaService.user.findUnique.mockResolvedValue(null);
+
+      await expect(service.resetPassword(userId, resetDto)).rejects.toThrow(
+        NotFoundException,
+      );
+    });
+  });
 });

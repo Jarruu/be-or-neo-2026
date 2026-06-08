@@ -19,6 +19,7 @@ import { UserRole } from '../../../prisma/generated-client/client';
 import { UpdateUserMentorDto } from './dto/update-user-mentor.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { UserResponseDto } from './dto/user-response.dto';
+import { ResetPasswordDto } from './dto/reset-password.dto';
 import { ApiJwtAuth } from '../../common/swagger/decorators/api-jwt-auth.decorator';
 import { ApiUuidParam } from '../../common/swagger/decorators/api-uuid-param.decorator';
 
@@ -161,5 +162,28 @@ export class UserController {
     @GetUser('id') currentAdminId: string,
   ) {
     return this.userService.toggleActive(id, currentAdminId);
+  }
+
+  @Patch(':id/reset-password')
+  @ApiOperation({
+    summary: 'Admin: Reset user password',
+    description: 'Resets the password of the specified user. Restricted to admin users.',
+  })
+  @ApiUuidParam('id', 'The user UUID')
+  @ApiBody({ type: ResetPasswordDto })
+  @ApiResponse({
+    status: 200,
+    description: 'User password successfully reset',
+    type: UserResponseDto,
+  })
+  @ApiResponse({ status: 400, description: 'Bad Request - invalid password input' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 403, description: 'Forbidden - Admins only' })
+  @ApiResponse({ status: 404, description: 'User not found' })
+  async resetPassword(
+    @Param('id') id: string,
+    @Body() dto: ResetPasswordDto,
+  ) {
+    return this.userService.resetPassword(id, dto);
   }
 }
