@@ -1,16 +1,6 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
-
-/* eslint-disable @typescript-eslint/no-unsafe-assignment */
-
-/* eslint-disable @typescript-eslint/unbound-method */
 import { Test, TestingModule } from '@nestjs/testing';
 import { ExamService } from './exam.service';
 import { PrismaService } from '../../common/services/prisma.service';
-import {
-  NotFoundException,
-  ForbiddenException,
-  BadRequestException,
-} from '@nestjs/common';
 import { AttemptStatus } from '../../../prisma/generated-client/client';
 
 describe('ExamService', () => {
@@ -65,18 +55,8 @@ describe('ExamService', () => {
     const examId = 'exam-1';
     const userId = 'user-1';
 
-    it('should throw Forbidden if registration not paid', async () => {
-      mockPrismaService.exam.findUnique.mockResolvedValue({ id: examId });
-      mockPrismaService.payment.findFirst.mockResolvedValue(null);
-
-      await expect(service.startAttempt(examId, userId)).rejects.toThrow(
-        ForbiddenException,
-      );
-    });
-
     it('should return existing active attempt if found', async () => {
       mockPrismaService.exam.findUnique.mockResolvedValue({ id: examId });
-      mockPrismaService.payment.findFirst.mockResolvedValue({ status: 'PAID' });
       mockPrismaService.examAttempt.findFirst.mockResolvedValue({
         id: 'active-1',
         status: 'IN_PROGRESS',
@@ -91,7 +71,6 @@ describe('ExamService', () => {
         id: examId,
         maxAttempts: 1,
       });
-      mockPrismaService.payment.findFirst.mockResolvedValue({ status: 'PAID' });
       mockPrismaService.examAttempt.findFirst.mockResolvedValue(null);
       mockPrismaService.examAttempt.count.mockResolvedValue(0);
       mockPrismaService.question.count.mockResolvedValue(5);
@@ -136,7 +115,7 @@ describe('ExamService', () => {
         ],
       };
 
-      const result = await service.submitAttempt(attemptId, userId, dto);
+      await service.submitAttempt(attemptId, userId, dto);
       expect(prisma.examAttempt.update).toHaveBeenCalledWith({
         where: { id: attemptId },
         data: expect.objectContaining({

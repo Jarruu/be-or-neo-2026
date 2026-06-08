@@ -3,6 +3,7 @@ import { AttendanceService } from './attendance.service';
 import { PrismaService } from '../../common/services/prisma.service';
 import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { AttendanceStatus } from '../../../prisma/generated-client/client';
+import { GoogleSheetsService } from '../../common/services/google-sheets.service';
 
 describe('AttendanceService', () => {
   let service: AttendanceService;
@@ -36,6 +37,11 @@ describe('AttendanceService', () => {
     },
   };
 
+  const mockGoogleSheetsService = {
+    batchUpdateAttendance: jest.fn(),
+    deleteActivityColumn: jest.fn(),
+  };
+
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -43,6 +49,10 @@ describe('AttendanceService', () => {
         {
           provide: PrismaService,
           useValue: mockPrismaService,
+        },
+        {
+          provide: GoogleSheetsService,
+          useValue: mockGoogleSheetsService,
         },
       ],
     }).compile();
@@ -110,6 +120,11 @@ describe('AttendanceService', () => {
       });
       mockPrismaService.attendance.update.mockResolvedValue({
         status: AttendanceStatus.PRESENT,
+        activityId,
+        activity: {
+          id: activityId,
+          name: 'Test Activity',
+        },
       });
 
       const result = await service.scanAttendance(dto);
@@ -123,6 +138,11 @@ describe('AttendanceService', () => {
       mockPrismaService.user.findFirst.mockResolvedValue({ id: userId });
       mockPrismaService.attendance.create.mockResolvedValue({
         status: AttendanceStatus.PRESENT,
+        activityId,
+        activity: {
+          id: activityId,
+          name: 'Test Activity',
+        },
       });
 
       const result = await service.scanAttendance(dto);
@@ -138,6 +158,10 @@ describe('AttendanceService', () => {
       });
       mockPrismaService.attendance.update.mockResolvedValue({
         status: AttendanceStatus.EXCUSED,
+        activity: {
+          id: 'activity-1',
+          name: 'Test Activity',
+        },
       });
 
       const result = await service.updateAttendance('att-1', {

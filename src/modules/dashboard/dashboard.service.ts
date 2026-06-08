@@ -71,10 +71,6 @@ export class DashboardService {
       }
     }
 
-    const examAttempt = await this.prisma.examAttempt.findFirst({
-      where: { userId, status: 'SUBMITTED' },
-    });
-
     const steps = [
       {
         step: 1,
@@ -102,8 +98,8 @@ export class DashboardService {
         step: 4,
         title: 'Ujian Seleksi',
         description: 'Kerjakan ujian sesuai subdivisi yang kamu pilih.',
-        isCompleted: !!examAttempt,
-        status: examAttempt ? 'COMPLETED' : 'PENDING',
+        isCompleted: true,
+        status: 'COMPLETED',
       },
     ];
 

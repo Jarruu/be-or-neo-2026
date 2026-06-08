@@ -10,10 +10,7 @@ import { PrismaService } from '../../common/services/prisma.service';
 import { CloudinaryStorageService } from '../../common/services/storage/cloudinary-storage.service';
 import { CreateLearningModuleDto } from './dto/create-learning-module.dto';
 import { UpdateLearningModuleDto } from './dto/update-learning-module.dto';
-import {
-  AttemptStatus,
-  UserRole,
-} from '../../../prisma/generated-client/client';
+import { UserRole } from '../../../prisma/generated-client/client';
 
 @Injectable()
 export class LearningModuleService {
@@ -86,17 +83,6 @@ export class LearningModuleService {
       where: { userId },
     });
     if (!profile?.subDivisionId) return [];
-
-    // Check if exam is submitted
-    const examPassed = await this.prisma.examAttempt.findFirst({
-      where: { userId, status: AttemptStatus.SUBMITTED },
-    });
-
-    if (!examPassed) {
-      throw new ForbiddenException(
-        'You must complete and submit your exam before accessing learning modules.',
-      );
-    }
 
     return this.findBySubDivision(profile.subDivisionId, frozenAt);
   }
@@ -247,16 +233,6 @@ export class LearningModuleService {
     ) {
       throw new ForbiddenException(
         'You do not have access to this learning module.',
-      );
-    }
-
-    const examPassed = await this.prisma.examAttempt.findFirst({
-      where: { userId, status: AttemptStatus.SUBMITTED },
-    });
-
-    if (!examPassed) {
-      throw new ForbiddenException(
-        'You must complete and submit your exam before accessing learning modules.',
       );
     }
   }

@@ -5,7 +5,6 @@ import { PrismaService } from '../../common/services/prisma.service';
 
 describe('DashboardService', () => {
   let service: DashboardService;
-  let prisma: PrismaService;
 
   const mockPrismaService = {
     user: {
@@ -14,6 +13,7 @@ describe('DashboardService', () => {
     },
     profile: {
       findUnique: jest.fn(),
+      count: jest.fn(),
     },
     submissionVerification: {
       findFirst: jest.fn(),
@@ -25,9 +25,6 @@ describe('DashboardService', () => {
     },
     recruitmentTimeline: {
       findMany: jest.fn(),
-    },
-    examAttempt: {
-      findFirst: jest.fn(),
     },
     subDivision: {
       findMany: jest.fn(),
@@ -56,7 +53,6 @@ describe('DashboardService', () => {
     }).compile();
 
     service = module.get<DashboardService>(DashboardService);
-    prisma = module.get<PrismaService>(PrismaService);
   });
 
   afterEach(() => {
@@ -92,7 +88,6 @@ describe('DashboardService', () => {
         status: 'PENDING',
       });
       mockPrismaService.recruitmentTimeline.findMany.mockResolvedValue([]);
-      mockPrismaService.examAttempt.findFirst.mockResolvedValue(null);
 
       const result = (await service.getMyDashboard('user-1')) as any;
 
@@ -122,7 +117,7 @@ describe('DashboardService', () => {
         { name: 'Web', _count: { profiles: 20 } },
         { name: 'Mobile', _count: { profiles: 12 } },
       ]);
-
+      mockPrismaService.profile.count.mockResolvedValue(20);
       const result = (await service.getAdminStats()) as any;
 
       expect(result.overview.totalRegistrants).toBe(100);

@@ -2,11 +2,9 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { AssignmentService } from './assignment.service';
 import { PrismaService } from '../../common/services/prisma.service';
 import { CloudinaryStorageService } from '../../common/services/storage/cloudinary-storage.service';
-import { BadRequestException, ForbiddenException } from '@nestjs/common';
-import {
-  AttemptStatus,
-  UserRole,
-} from '../../../prisma/generated-client/client';
+import { GoogleSheetsService } from '../../common/services/google-sheets.service';
+import { BadRequestException } from '@nestjs/common';
+import { UserRole } from '../../../prisma/generated-client/client';
 
 describe('AssignmentService', () => {
   let service: AssignmentService;
@@ -38,6 +36,10 @@ describe('AssignmentService', () => {
     downloadFile: jest.fn(),
   };
 
+  const mockGoogleSheetsService = {
+    updateAssignmentScoresToSheets: jest.fn(),
+  };
+
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -49,6 +51,10 @@ describe('AssignmentService', () => {
         {
           provide: CloudinaryStorageService,
           useValue: mockStorage,
+        },
+        {
+          provide: GoogleSheetsService,
+          useValue: mockGoogleSheetsService,
         },
       ],
     }).compile();
@@ -120,29 +126,9 @@ describe('AssignmentService', () => {
     const asgId = 'asg-1';
     const file = { originalname: 'task.zip' } as any;
 
-    it('should throw Forbidden if exam not submitted', async () => {
-      mockPrismaService.user.findUnique.mockResolvedValue({
-        deactivatedAt: null,
-      });
-      mockPrismaService.assignment.findUnique.mockResolvedValue({
-        id: asgId,
-        subDivisionId: 'sub-1',
-      });
-      mockPrismaService.profile.findUnique.mockResolvedValue({
-        subDivisionId: 'sub-1',
-      });
-      mockPrismaService.examAttempt.findFirst.mockResolvedValue(null);
-      await expect(service.submit(asgId, userId, file)).rejects.toThrow(
-        ForbiddenException,
-      );
-    });
-
     it('should throw BadRequest when both file and text are missing', async () => {
       mockPrismaService.user.findUnique.mockResolvedValue({
         deactivatedAt: null,
-      });
-      mockPrismaService.examAttempt.findFirst.mockResolvedValue({
-        status: AttemptStatus.SUBMITTED,
       });
       mockPrismaService.assignment.findUnique.mockResolvedValue({
         id: asgId,
@@ -160,9 +146,6 @@ describe('AssignmentService', () => {
     it('should create submission with file upload', async () => {
       mockPrismaService.user.findUnique.mockResolvedValue({
         deactivatedAt: null,
-      });
-      mockPrismaService.examAttempt.findFirst.mockResolvedValue({
-        status: AttemptStatus.SUBMITTED,
       });
       mockPrismaService.assignment.findUnique.mockResolvedValue({
         id: asgId,
@@ -185,9 +168,6 @@ describe('AssignmentService', () => {
     it('should create submission with text-only content', async () => {
       mockPrismaService.user.findUnique.mockResolvedValue({
         deactivatedAt: null,
-      });
-      mockPrismaService.examAttempt.findFirst.mockResolvedValue({
-        status: AttemptStatus.SUBMITTED,
       });
       mockPrismaService.assignment.findUnique.mockResolvedValue({
         id: asgId,
@@ -223,9 +203,6 @@ describe('AssignmentService', () => {
       mockPrismaService.user.findUnique.mockResolvedValue({
         deactivatedAt: null,
       });
-      mockPrismaService.examAttempt.findFirst.mockResolvedValue({
-        status: AttemptStatus.SUBMITTED,
-      });
       mockPrismaService.assignment.findUnique.mockResolvedValue({
         id: asgId,
         subDivisionId: 'sub-1',
@@ -250,10 +227,36 @@ describe('AssignmentService', () => {
     it('should update score and feedback', async () => {
       mockPrismaService.assignmentSubmission.findUnique.mockResolvedValue({
         id: 'subm-1',
+        assignmentId: 'asg-1',
+        assignment: {
+          id: 'asg-1',
+          title: 'Tugas Frontend',
+        },
+        user: {
+          profile: {
+            subDivisionId: 'sub-1',
+            subDivision: {
+              name: 'Frontend',
+            },
+          },
+        },
       });
       mockPrismaService.assignmentSubmission.update.mockResolvedValue({
         id: 'subm-1',
         score: 90,
+        assignmentId: 'asg-1',
+        assignment: {
+          id: 'asg-1',
+          title: 'Tugas Frontend',
+        },
+        user: {
+          profile: {
+            subDivisionId: 'sub-1',
+            subDivision: {
+              name: 'Frontend',
+            },
+          },
+        },
       });
 
       const result = await service.scoreSubmission('subm-1', {

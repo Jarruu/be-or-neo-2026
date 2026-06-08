@@ -9,10 +9,7 @@ import { CloudinaryStorageService } from '../../common/services/storage/cloudina
 import { CreateAssignmentDto } from './dto/create-assignment.dto';
 import { UpdateAssignmentDto } from './dto/update-assignment.dto';
 import { ScoreSubmissionDto } from './dto/score-submission.dto';
-import {
-  AttemptStatus,
-  UserRole,
-} from '../../../prisma/generated-client/client';
+import { UserRole } from '../../../prisma/generated-client/client';
 import { GoogleSheetsService } from '../../common/services/google-sheets.service';
 
 @Injectable()
@@ -81,17 +78,6 @@ export class AssignmentService {
       where: { userId },
     });
     if (!profile?.subDivisionId) return [];
-
-    // Check if exam is submitted
-    const examPassed = await this.prisma.examAttempt.findFirst({
-      where: { userId, status: AttemptStatus.SUBMITTED },
-    });
-
-    if (!examPassed) {
-      throw new ForbiddenException(
-        'You must complete and submit your exam before accessing assignments.',
-      );
-    }
 
     return this.prisma.assignment.findMany({
       where: {
@@ -316,7 +302,10 @@ export class AssignmentService {
     });
 
     // Sinkronisasi ke Google Sheets secara otomatis untuk SELURUH nilai pada assignment & sub-divisi ini
-    const profile = submission.user.profile as any;
+    const profile = submission.user.profile as unknown as {
+      subDivisionId: string;
+      subDivision?: { name: string } | null;
+    } | null;
     const subDivisionId = profile?.subDivisionId;
     const subDivisionName = profile?.subDivision?.name;
 
@@ -368,11 +357,17 @@ export class AssignmentService {
         .filter((u) => u.profile)
         .map((u) => {
           const submission = u.assignmentSubmissions[0];
+          const profile = u.profile as unknown as {
+            nim: string;
+            fullName: string;
+            division?: { name: string } | null;
+            subDivision?: { name: string } | null;
+          };
           return {
-            nim: u.profile!.nim,
-            fullName: u.profile!.fullName,
-            divisionName: (u.profile as any).division?.name || '-',
-            subDivisionName: (u.profile as any).subDivision?.name || '-',
+            nim: profile.nim,
+            fullName: profile.fullName,
+            divisionName: profile.division?.name || '-',
+            subDivisionName: profile.subDivision?.name || '-',
             score:
               submission &&
               submission.score !== null &&
@@ -390,7 +385,7 @@ export class AssignmentService {
           records,
         );
       }
-    } catch (error) {
+    } catch {
       // Log error but proceed
     }
   }
@@ -471,16 +466,6 @@ export class AssignmentService {
     ) {
       throw new ForbiddenException(
         'You do not have access to this assignment.',
-      );
-    }
-
-    const examPassed = await this.prisma.examAttempt.findFirst({
-      where: { userId, status: AttemptStatus.SUBMITTED },
-    });
-
-    if (!examPassed) {
-      throw new ForbiddenException(
-        'You must complete and submit your exam before accessing assignments.',
       );
     }
   }

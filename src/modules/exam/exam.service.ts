@@ -184,17 +184,6 @@ export class ExamService {
   async startAttempt(examId: string, userId: string) {
     const exam = await this.findOne(examId);
 
-    // Check payment status first
-    const payment = await this.prisma.payment.findFirst({
-      where: { userId, status: 'APPROVED' },
-    });
-
-    if (!payment) {
-      throw new ForbiddenException(
-        'You must complete the registration payment before starting the exam.',
-      );
-    }
-
     // Check if user already has an active attempt
     const activeAttempt = await this.prisma.examAttempt.findFirst({
       where: { userId, examId, status: AttemptStatus.IN_PROGRESS },

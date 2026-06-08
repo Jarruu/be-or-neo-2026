@@ -3,11 +3,7 @@ import { LearningModuleService } from './learning-module.service';
 import { PrismaService } from '../../common/services/prisma.service';
 import { CloudinaryStorageService } from '../../common/services/storage/cloudinary-storage.service';
 import { CACHE_MANAGER } from '@nestjs/cache-manager';
-import { ForbiddenException, NotFoundException } from '@nestjs/common';
-import {
-  AttemptStatus,
-  UserRole,
-} from '../../../prisma/generated-client/client';
+import { UserRole } from '../../../prisma/generated-client/client';
 
 describe('LearningModuleService', () => {
   let service: LearningModuleService;
@@ -99,26 +95,12 @@ describe('LearningModuleService', () => {
   describe('findByUserId', () => {
     const userId = 'user-1';
 
-    it('should throw Forbidden if exam not submitted', async () => {
-      mockPrismaService.profile.findUnique.mockResolvedValue({
-        subDivisionId: 'sub-1',
-      });
-      mockPrismaService.examAttempt.findFirst.mockResolvedValue(null);
-
-      await expect(service.findByUserId(userId)).rejects.toThrow(
-        ForbiddenException,
-      );
-    });
-
-    it('should return modules if exam is submitted', async () => {
+    it('should return modules', async () => {
       mockPrismaService.user.findUnique.mockResolvedValue({
         deactivatedAt: null,
       });
       mockPrismaService.profile.findUnique.mockResolvedValue({
         subDivisionId: 'sub-1',
-      });
-      mockPrismaService.examAttempt.findFirst.mockResolvedValue({
-        status: AttemptStatus.SUBMITTED,
       });
       mockCacheManager.get.mockResolvedValue(null);
       mockPrismaService.learningModule.findMany.mockResolvedValue([
@@ -150,9 +132,6 @@ describe('LearningModuleService', () => {
       mockPrismaService.profile.findUnique.mockResolvedValue({
         subDivisionId: 'sub-1',
       });
-      mockPrismaService.examAttempt.findFirst.mockResolvedValue({
-        status: AttemptStatus.SUBMITTED,
-      });
 
       const result = await service.download('mod-1', 'user-1', UserRole.USER);
 
@@ -177,9 +156,6 @@ describe('LearningModuleService', () => {
       });
       mockPrismaService.profile.findUnique.mockResolvedValue({
         subDivisionId: 'sub-1',
-      });
-      mockPrismaService.examAttempt.findFirst.mockResolvedValue({
-        status: AttemptStatus.SUBMITTED,
       });
 
       await expect(
